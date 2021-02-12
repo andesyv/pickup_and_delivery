@@ -4,6 +4,7 @@
 #include "feasability.h"
 #include <algorithm>
 #include "cost.h"
+#include <numeric>
 
 template <std::size_t I>
 std::vector<std::vector<int>> toNestedList(const int (&a)[I]) {
@@ -21,9 +22,20 @@ std::vector<std::vector<int>> toNestedList(const int (&a)[I]) {
     return out;
 }
 
-// std::vector<int> fromNestedList(const std::vector<std::vector<int>>& list) {
-
-// }
+std::vector<int> fromNestedList(const std::vector<std::vector<int>>& list) {
+    std::vector<int> out;
+    out.reserve(std::accumulate(list.begin(), list.end(), std::size_t{0}, [](const auto& a, const auto& b){
+        return a + b.size() + 1;
+    }));
+    for (std::size_t i{0}; i < list.size(); ++i) {
+        auto inner = list.at(i);
+        for (const auto& v : inner)
+            out.push_back(v+1);
+        if (i < list.size() - 1)
+            out.push_back(0);
+    }
+    return out;
+}
 
 int main() {
     std::cout << "Hello world!" << std::endl;
