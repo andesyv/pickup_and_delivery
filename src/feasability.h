@@ -7,11 +7,12 @@
 std::optional<std::runtime_error> checkFeasability(const Problem& problem, const std::vector<std::vector<int>>& solution) {
     for (std::size_t i{0}; i < solution.size(); ++i) {
         const auto& route = solution.at(i);
-        const auto& vehicle = problem.vehicles.at(i);
         
         // Dummy vehicle is always feasable. Skip
         if (problem.vehicles.size() <= i)
             continue;
+        
+        const auto& vehicle = problem.vehicles.at(i);
 
         // Check if route is available for vehicle
         const auto& available = vehicle.availableCalls;
@@ -46,6 +47,11 @@ std::optional<std::runtime_error> checkFeasability(const Problem& problem, const
             return (it != problem.trips.end()) ? std::optional<Trip>{*it} : std::nullopt;
         };
 
+        auto findVehicleCallCombo = [&](const auto& c) {
+            auto it = std::find_if(problem.vehicleCalls.begin(), problem.vehicleCalls.end(), [&](const VehicleCall& t){ return t.vehicleIndex == i && t.callIndex == c; });
+            return (it != problem.vehicleCalls.end()) ? std::optional<VehicleCall>{*it} : std::nullopt;
+        };
+
         // Route timeslots
         currentCalls.clear();
         int time{vehicle.startingTime}; // Time elapsed since start
@@ -63,6 +69,7 @@ std::optional<std::runtime_error> checkFeasability(const Problem& problem, const
                 auto path = findPath(currentNode, call.origin);
                 if (!path)
                     return std::runtime_error{"Could not find route path."};
+                // Travel time
                 time += path.value().time;
                 currentNode = path.value().destination;
 
@@ -73,6 +80,13 @@ std::optional<std::runtime_error> checkFeasability(const Problem& problem, const
                 // Wait for pickup timewinow
                 if (time < call.lowerTimewindowDelivery)
                     time = call.lowerTimewindowDelivery;
+
+                // Take some time to pick up package
+                auto vehicleCall = findVehicleCallCombo(callIndex);
+                if (!vehicleCall)
+                    return std::runtime_error{"Could not find vehicle call combo."};
+                time += vehicleCall.value().originNodeTime;
+
             } else {
                 auto path = findPath(currentNode, call.destination);
                 if (!path)
@@ -88,6 +102,12 @@ std::optional<std::runtime_error> checkFeasability(const Problem& problem, const
                 // Wait for delivery
                 if (time < call.lowerTimewindowDelivery)
                     time = call.lowerTimewindowDelivery;
+
+                // Spend some more time delivering package
+                auto vehicleCall = findVehicleCallCombo(callIndex);
+                if (!vehicleCall)
+                    return std::runtime_error{"Could not find vehicle call combo."};
+                time += vehicleCall.value().destNodeTime;
                 
                 currentCalls.erase(search);
             }
