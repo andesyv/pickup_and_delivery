@@ -10,7 +10,7 @@ Result<int, std::runtime_error> getCost(const Problem &problem, const std::vecto
         const auto &route = solution.at(i);
 
         auto findPath = [&](const auto &a, const auto &b) {
-            auto it = std::find_if(problem.trips.begin(), problem.trips.end(), [&](const Trip &t) { return t.origin == a && t.destination == b; });
+            auto it = std::find_if(problem.trips.begin(), problem.trips.end(), [&](const Trip &t) { return t.vehicleIndex == i && t.origin == a && t.destination == b; });
             return (it != problem.trips.end()) ? std::optional<Trip>{*it} : std::nullopt;
         };
 

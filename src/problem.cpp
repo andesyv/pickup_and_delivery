@@ -97,6 +97,7 @@ Result<Problem, std::runtime_error> load(const std::string& path) {
     for (const auto& line : lines) {
         auto data = split(line, ',');
         p.trips.emplace_back(
+            stoi<uint8_t>(data[0])-1,
             stoi<uint8_t>(data[1])-1,
             stoi<uint8_t>(data[2])-1,
             stoi<int>(data[3]),

@@ -42,7 +42,7 @@ int main() {
     //     {2, 3, 3, 2, 0, 0}, // Third vehicle
     //     {5, 5} // Dummy vehicle (outsourcing)
     // };
-    auto solution = toNestedList({1, 1, 0, 0, 0, 7, 7, 3, 4, 4, 3, 2, 2, 6, 6});
+    auto solution = toNestedList({1,1,0,7,7,0,2,2,0,3,4,5,6,4,5,3,6});
 
     if (auto err = checkFeasability(problem, solution)) {
         std::cout << "Not feasable: " << err.value().what() << std::endl;

@@ -43,6 +43,7 @@ struct Call {
 
 /// Cost of trips
 struct Trip {
+    uint8_t vehicleIndex;
     Node origin;
     Node destination;
     int time;
