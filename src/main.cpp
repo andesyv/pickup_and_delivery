@@ -8,36 +8,37 @@
 #include "common.h"
 #include <chrono>
 
-std::pair<std::vector<std::vector<int>>, double> blindRandomSearch(const Problem& p) {
-    constexpr int MAX_SEARCH = 100000;
+std::vector<std::vector<int>> blindRandomSearch(const Problem& p) {
+    constexpr int MAX_SEARCH = 10000;
     auto best = genInitialSolution(p); // init to dummy solution
     auto cost = getCost(p, best);
-
-    std::pair<unsigned long long, int> totalCost{cost, 1};
 
     for (int i{0}; i < MAX_SEARCH; ++i) {
         auto current = genRandSolution(p);
         if (!checkFeasability(p, current)) {
             auto newCost = getCost(p, current);
-            totalCost.first += newCost;
-            totalCost.second += 1;
-            if (newCost < cost)
+            if (newCost && newCost.val() < cost)
                 best = current;
         }
     }
 
-    return {best, totalCost.first / static_cast<double>(totalCost.second)};
+    return best;
 }
 
 int main() {
     std::cout << "Hello world!" << std::endl;
 
     for (const auto& file : {
-        "./src/data/Call_7_Vehicle_3.txt"
+        "./src/data/Call_7_Vehicle_3.txt",
+        "./src/data/Call_18_Vehicle_5.txt",
+        "./src/data/Call_035_Vehicle_07.txt",
+        "./src/data/Call_080_Vehicle_20.txt",
+        "./src/data/Call_130_Vehicle_40.txt"
         }) {
         
-        std::cout << "File: " << file << std::endl;
+        std::cout << std::endl << std::endl << "File: " << file << std::endl;
         long long totalTime{0};
+        long long totalCost{0};
 
         for (int i{0}; i < 10; ++i) {
             auto pResult = load(file);
@@ -48,7 +49,7 @@ int main() {
             auto problem = pResult.val();
 
             std::chrono::steady_clock::time_point t1{std::chrono::steady_clock::now()};
-            const auto [solution, avgCost] = blindRandomSearch(problem);
+            const auto solution = blindRandomSearch(problem);
             auto duration = std::chrono::steady_clock::now() - t1;
 
             std::cout << "Best solution: ";    
@@ -62,7 +63,7 @@ int main() {
                 return 1;
             }
             std::cout << "Cost: " << cResult.val() << std::endl;
-            std::cout << "Avg cost: " << avgCost << std::endl;
+            totalCost += cResult.val();
             
             const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
             totalTime += ms;
@@ -70,6 +71,7 @@ int main() {
             std::cout << "runtime: " << ms << "ms" << std::endl;
         }
 
+        std::cout << "Average cost: " << static_cast<double>(totalCost) / 10.0 << std::endl;
         std::cout << "Average runtime: " << static_cast<double>(totalTime) / 10.0 << "ms" << std::endl;
     }
 
