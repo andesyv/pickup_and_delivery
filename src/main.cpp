@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "cost.h"
 #include <numeric>
+#include "common.h"
 
 template <std::size_t I>
 std::vector<std::vector<int>> toNestedList(const int (&a)[I]) {
@@ -54,7 +55,14 @@ int main() {
     //     {2, 3, 3, 2, 0, 0}, // Third vehicle
     //     {5, 5} // Dummy vehicle (outsourcing)
     // };
-    auto solution = toNestedList({1,1,0,7,7,0,2,2,0,3,4,5,6,4,5,3,6});
+    // auto solution = toNestedList({1,1,0,7,7,0,2,2,0,3,4,5,6,4,5,3,6});
+    auto solution = genRandSolution(problem);
+    
+    std::cout << "Solution: ";
+    for (auto l = fromNestedList(solution); auto v : l) {
+        std::cout << std::to_string(v) << ",";
+    }
+    std::cout << std::endl;
 
     if (auto err = checkFeasability(problem, solution)) {
         std::cout << "Not feasable: " << err.value().what() << std::endl;
@@ -69,6 +77,8 @@ int main() {
     }
     auto cost = cResult.val();
     std::cout << "Cost was " << cost << std::endl;
+
+    std::cout << std::endl;
 
     return 0;
 }
