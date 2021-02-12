@@ -3,6 +3,7 @@
 #include "problem.h"
 #include "feasability.h"
 #include <algorithm>
+#include "cost.h"
 
 template <std::size_t I>
 std::vector<std::vector<int>> toNestedList(const int (&a)[I]) {
@@ -41,12 +42,21 @@ int main() {
     //     {2, 3, 3, 2, 0, 0}, // Third vehicle
     //     {5, 5} // Dummy vehicle (outsourcing)
     // };
-    auto solution = toNestedList({3, 3, 7, 7, 0, 3, 3, 0, 3, 4, 4, 3, 1, 1, 0, 6, 6});
+    auto solution = toNestedList({1, 1, 0, 0, 0, 7, 7, 3, 4, 4, 3, 2, 2, 6, 6});
 
     if (auto err = checkFeasability(problem, solution)) {
         std::cout << "Not feasable: " << err.value().what() << std::endl;
         return 1;
     }
     std::cout << "Feasable!" << std::endl;
+
+    auto cResult = getCost(problem, solution);
+    if (!cResult) {
+        std::cout << cResult.err().what() << std::endl;
+        return 1;
+    }
+    auto cost = cResult.val();
+    std::cout << "Cost was " << cost << std::endl;
+
     return 0;
 }
