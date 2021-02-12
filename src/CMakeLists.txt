@@ -1,2 +1,2 @@
 add_executable(pickup_and_delivery main.cpp)
-target_sources(pickup_and_delivery PRIVATE problemLoader.cpp)
+target_sources(pickup_and_delivery PRIVATE problem.cpp)

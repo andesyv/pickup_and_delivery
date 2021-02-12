@@ -12,10 +12,10 @@ struct Result {
     Result(const T& v) : value{v} {}
     Result(const E& e) : value{e} {}
 
-    operator bool() const { return value.index == 0; }
-    T&& val() { return std::get<T>(value); }
-    E&& err() { return std::get<E>(value); }
-    T&& operator->() { return std::get<T>(value); }
+    operator bool() const { return value.index() == 0; }
+    T val() { return std::get<T>(value); }
+    E err() { return std::get<E>(value); }
+    T operator->() { return std::get<T>(value); }
 };
 
 // Note: Nodes are (currently) not zero-indexed

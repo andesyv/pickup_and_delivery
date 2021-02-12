@@ -1,4 +1,4 @@
-#include "problemLoader.h"
+#include "problem.h"
 #include <iostream>
 #include <algorithm>
 #include <sstream>
