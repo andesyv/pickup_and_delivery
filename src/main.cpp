@@ -39,6 +39,8 @@ int main() {
         std::cout << std::endl << std::endl << "File: " << file << std::endl;
         long long totalTime{0};
         long long totalCost{0};
+        int bestCost{1234567890};
+        std::vector<int> bestSolution{};
 
         for (int i{0}; i < 10; ++i) {
             auto pResult = load(file);
@@ -62,8 +64,14 @@ int main() {
                 std::cout << cResult.err().what() << std::endl;
                 return 1;
             }
-            std::cout << "Cost: " << cResult.val() << std::endl;
-            totalCost += cResult.val();
+
+            const auto cost = cResult.val();
+            if (cost < bestCost) {
+                bestCost = cost;
+                bestSolution = fromNestedList(solution);
+            }
+            std::cout << "Cost: " << cost << std::endl;
+            totalCost += cost;
             
             const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
             totalTime += ms;
@@ -71,8 +79,14 @@ int main() {
             std::cout << "runtime: " << ms << "ms" << std::endl;
         }
 
+        std::cout << std::endl << std::endl;
+
         std::cout << "Average cost: " << static_cast<double>(totalCost) / 10.0 << std::endl;
         std::cout << "Average runtime: " << static_cast<double>(totalTime) / 10.0 << "ms" << std::endl;
+        std::cout << "Best cost: " << bestCost << std::endl;
+        std::cout << "Best solution: ";
+        for (const auto& v : bestSolution)
+            std::cout << v << ", ";
     }
 
     return 0;

@@ -57,7 +57,7 @@ std::vector<std::vector<int>> genRandSolution(const Problem& p) {
     std::shuffle(remainingCalls.begin(), remainingCalls.end(), ran);
 
     while (!remainingCalls.empty()) {
-        routes.at(ran() % vSize).push_back(remainingCalls.back());
+        routes.at(ran() % (vSize+1)).push_back(remainingCalls.back());
         remainingCalls.pop_back();
     }
 
