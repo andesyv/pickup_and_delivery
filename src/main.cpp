@@ -40,16 +40,17 @@ int main() {
         long long totalTime{0};
         long long totalCost{0};
         int bestCost{1234567890};
-        std::vector<int> bestSolution{};
+        std::vector<std::vector<int>> bestSolution{};
+
+        auto pResult = load(file);
+        if (!pResult) {
+            std::cout << pResult.err().what() << std::endl;
+            return 1;
+        }
+        auto problem = pResult.val();
+
 
         for (int i{0}; i < 10; ++i) {
-            auto pResult = load(file);
-            if (!pResult) {
-                std::cout << pResult.err().what() << std::endl;
-                return 1;
-            }
-            auto problem = pResult.val();
-
             std::chrono::steady_clock::time_point t1{std::chrono::steady_clock::now()};
             const auto solution = blindRandomSearch(problem);
             auto duration = std::chrono::steady_clock::now() - t1;
@@ -68,7 +69,7 @@ int main() {
             const auto cost = cResult.val();
             if (cost < bestCost) {
                 bestCost = cost;
-                bestSolution = fromNestedList(solution);
+                bestSolution = solution;
             }
             std::cout << "Cost: " << cost << std::endl;
             totalCost += cost;
@@ -79,14 +80,23 @@ int main() {
             std::cout << "runtime: " << ms << "ms" << std::endl;
         }
 
+        auto improvementPercent = [&](){
+            auto initCost = getCost(problem, genInitialSolution(problem));
+            auto bestCost = getCost(problem, bestSolution);
+
+            return (initCost && bestCost) ? 100.0 * (initCost.val() - bestCost.val()) / initCost.val() : 0.0;
+        };
+
         std::cout << std::endl << std::endl;
 
         std::cout << "Average cost: " << static_cast<double>(totalCost) / 10.0 << std::endl;
         std::cout << "Average runtime: " << static_cast<double>(totalTime) / 10.0 << "ms" << std::endl;
         std::cout << "Best cost: " << bestCost << std::endl;
         std::cout << "Best solution: ";
-        for (const auto& v : bestSolution)
+        for (const auto& v : fromNestedList(bestSolution))
             std::cout << v << ", ";
+        std::cout << "Improvement (%): " << std::to_string(improvementPercent()) << std::endl;
+        
     }
 
     return 0;

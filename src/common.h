@@ -2,6 +2,7 @@
 #include "problem.h"
 #include <vector>
 #include <random>
+#include <ctime>
 
 template <std::size_t I>
 std::vector<std::vector<int>> toNestedList(const int (&a)[I]) {
@@ -44,7 +45,7 @@ std::vector<std::vector<int>> genInitialSolution(const Problem& p) {
 }
 
 std::vector<std::vector<int>> genRandSolution(const Problem& p) {
-    static std::default_random_engine ran{1234567890};
+    static std::default_random_engine ran{static_cast<unsigned int>(std::time(nullptr))};
 
     std::vector<std::vector<int>> routes;
     const auto vSize{p.vehicles.size()};
