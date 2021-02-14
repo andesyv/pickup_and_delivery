@@ -39,8 +39,11 @@ std::vector<std::vector<int>> genInitialSolution(const Problem& p) {
     std::vector<std::vector<int>> routes;
     routes.resize(p.vehicles.size()+1);
 
-    for (int i{0}; i < p.calls.size(); ++i)
+    routes.back().reserve(p.calls.size() * 2);
+    for (int i{0}; i < p.calls.size(); ++i) {
         routes.back().push_back(i);
+        routes.back().push_back(i);
+    }
     return routes;
 }
 
