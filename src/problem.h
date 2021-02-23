@@ -3,6 +3,7 @@
 #include <string>
 #include <variant>
 #include <stdexcept>
+#include <limits>
 
 // Maybe monad / neither implementation based on https://github.com/LoopPerfect/neither and std::optional
 template <typename T, typename E = std::exception>
@@ -13,9 +14,11 @@ struct Result {
     Result(const E& e) : value{e} {}
 
     operator bool() const { return value.index() == 0; }
-    T val() { return std::get<T>(value); }
-    E err() { return std::get<E>(value); }
-    T operator->() { return std::get<T>(value); }
+    T val() const { return std::get<T>(value); }
+    E err() const { return std::get<E>(value); }
+    T max() const { return std::numeric_limits<T>::max(); }
+    T val_or_max() const { return static_cast<bool>(*this) ? val() : max(); }
+    T operator->() const { return std::get<T>(value); }
 };
 
 // Note: Nodes are (currently) not zero-indexed

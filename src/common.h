@@ -48,6 +48,7 @@ std::vector<std::vector<int>> genInitialSolution(const Problem& p) {
 }
 
 std::vector<std::vector<int>> genRandSolution(const Problem& p) {
+    // Random engine, seeded by current time.
     static std::default_random_engine ran{static_cast<unsigned int>(std::time(nullptr))};
 
     std::vector<std::vector<int>> routes;

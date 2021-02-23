@@ -11,14 +11,17 @@
 std::vector<std::vector<int>> blindRandomSearch(const Problem& p) {
     constexpr int MAX_SEARCH = 10000;
     auto best = genInitialSolution(p); // init to dummy solution
-    auto cost = getCost(p, best);
+    auto cost = getCost(p, best).val_or_max();
 
     for (int i{0}; i < MAX_SEARCH; ++i) {
         auto current = genRandSolution(p);
-        if (!checkFeasability(p, current)) {
-            auto newCost = getCost(p, current);
-            if (newCost && newCost.val() < cost)
+        auto result = checkFeasability(p, current);
+        if (!result) {
+            auto newCost = getCost(p, current).val_or_max();
+            if (newCost && newCost < cost) {
                 best = current;
+                cost = newCost;
+            }
         }
     }
 
@@ -39,7 +42,7 @@ int main() {
         std::cout << std::endl << std::endl << "File: " << file << std::endl;
         long long totalTime{0};
         long long totalCost{0};
-        int bestCost{1234567890};
+        int bestCost{std::numeric_limits<int>::max()};
         std::vector<std::vector<int>> bestSolution{};
 
         auto pResult = load(file);
