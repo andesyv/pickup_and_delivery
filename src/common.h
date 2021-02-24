@@ -8,7 +8,7 @@ template <std::size_t I>
 std::vector<std::vector<int>> toNestedList(const int (&a)[I]) {
     std::vector<std::vector<int>> out;
     std::size_t beg{0};
-    for (uint8_t end{0}; end <= I; ++end) { // Allow for one past end as this copies the range before the end
+    for (index_t end{0}; end <= I; ++end) { // Allow for one past end as this copies the range before the end
         if (end == I || a[end] == 0) {
             out.push_back(std::vector<int>{a + beg, a + end});
             std::transform(out.back().begin(), out.back().end(), out.back().begin(),

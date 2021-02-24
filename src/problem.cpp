@@ -55,7 +55,7 @@ Result<Problem, std::runtime_error> load(const std::string& path) {
         auto data = split(s, ',');
 
         if (data.size() != 4) return std::runtime_error{"Input file missing data in vehicle list"};
-        p.vehicles.emplace_back(stoi<uint8_t>(data[1])-1, stoi<int>(data[2]), stoi<int>(data[3]));
+        p.vehicles.emplace_back(stoi<index_t>(data[1])-1, stoi<int>(data[2]), stoi<int>(data[3]));
     }
 
     // Call count:
@@ -67,21 +67,21 @@ Result<Problem, std::runtime_error> load(const std::string& path) {
     // Vehicle calls
     if (next()) return std::runtime_error{"End of file"};
     auto lines = split(str, '\n');
-    for (uint8_t i{0}; i < p.vehicles.size(); ++i) {
+    for (index_t i{0}; i < p.vehicles.size(); ++i) {
         auto calls = split(lines.at(i), ',');
         std::transform(calls.begin()+1, calls.end(), std::back_inserter(p.vehicles.at(i).availableCalls),
-        [](const auto& s){ return stoi<uint8_t>(s)-1; }); // -1 because Zero-indexed calls
+        [](const auto& s){ return stoi<index_t>(s)-1; }); // -1 because Zero-indexed calls
     }
 
     // Calls
     if (next()) return std::runtime_error{"End of file"};
     p.calls.reserve(callCount);
     lines = split(str, '\n');
-    for (uint8_t i{0}; i < callCount; ++i) {
+    for (index_t i{0}; i < callCount; ++i) {
         auto call = split(lines.at(i), ',');
         p.calls.emplace_back(
-            stoi<uint8_t>(call[1])-1,
-            stoi<uint8_t>(call[2])-1, 
+            stoi<index_t>(call[1])-1,
+            stoi<index_t>(call[2])-1, 
             stoi<int>(call[3]),
             stoi<int>(call[4]),
             stoi<int>(call[5]),
@@ -98,9 +98,9 @@ Result<Problem, std::runtime_error> load(const std::string& path) {
     for (const auto& line : lines) {
         auto data = split(line, ',');
         p.trips.emplace_back(
-            stoi<uint8_t>(data[0])-1,
-            stoi<uint8_t>(data[1])-1,
-            stoi<uint8_t>(data[2])-1,
+            stoi<index_t>(data[0])-1,
+            stoi<index_t>(data[1])-1,
+            stoi<index_t>(data[2])-1,
             stoi<int>(data[3]),
             stoi<int>(data[4])
         );
@@ -113,8 +113,8 @@ Result<Problem, std::runtime_error> load(const std::string& path) {
     for (const auto& line : lines) {
         auto data = split(line, ',');
         p.vehicleCalls[{
-            stoi<uint8_t>(data[0])-1, // zero-indexed
-            stoi<uint8_t>(data[1])-1 // zero-indexed
+            stoi<index_t>(data[0])-1, // zero-indexed
+            stoi<index_t>(data[1])-1 // zero-indexed
         }] = VehicleCall{
             stoi<int>(data[2]),
             stoi<int>(data[3]),

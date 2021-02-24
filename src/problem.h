@@ -23,20 +23,20 @@ struct Result {
 };
 
 // Note: Nodes are (currently) not zero-indexed
-typedef uint8_t Node;
+typedef uint8_t index_t;
 
 /// Vehicle data
 struct Vehicle {
-    uint8_t homeNodeIndex;
+    index_t homeNodeIndex;
     int startingTime;
     int capacity;
-    std::vector<uint8_t> availableCalls;
+    std::vector<index_t> availableCalls;
 };
 
 /// Requested trips
 struct Call {
-    Node origin;
-    Node destination;
+    index_t origin;
+    index_t destination;
     int size;
     int costOfNotTransporting;
     int lowerTimewindowPickup;
@@ -47,9 +47,9 @@ struct Call {
 
 /// Cost of trips
 struct Trip {
-    uint8_t vehicleIndex;
-    Node origin;
-    Node destination;
+    index_t vehicleIndex;
+    index_t origin;
+    index_t destination;
     int time;
     int cost;
 };
@@ -66,7 +66,7 @@ struct Problem {
     std::vector<Vehicle> vehicles;
     std::vector<Call> calls;
     std::vector<Trip> trips;
-    std::map<std::pair<uint8_t, uint8_t>, VehicleCall> vehicleCalls; // vehicle index, call index
+    std::map<std::pair<index_t, index_t>, VehicleCall> vehicleCalls; // vehicle index, call index
 };
 
 std::vector<std::string_view> split(const std::string_view& str, char c);
@@ -77,9 +77,9 @@ inline T stoi(const std::string_view& sv) {
 }
 
 template<>
-inline uint8_t stoi(const std::string_view& sv) {
+inline index_t stoi(const std::string_view& sv) {
     uint16_t temp = std::stoi(std::string{sv});
-    return static_cast<uint8_t>(temp);
+    return static_cast<index_t>(temp);
 }
 
 Result<Problem, std::runtime_error> load(const std::string& path);

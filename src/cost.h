@@ -7,7 +7,7 @@
 /// Basically the same code as in the feasability check. (TODO: Refactor)
 Result<int, std::runtime_error> getCost(const Problem &problem, const std::vector<std::vector<int>> &solution) {
     int totalCost{0};
-    for (uint8_t i{0}; i < solution.size(); ++i) {
+    for (index_t i{0}; i < solution.size(); ++i) {
         const auto &route = solution.at(i);
 
         auto findPath = [&](const auto &a, const auto &b) {
@@ -40,7 +40,7 @@ Result<int, std::runtime_error> getCost(const Problem &problem, const std::vecto
                     // It costs some moneys to pick up package
                     if (!problem.vehicleCalls.contains({i, callIndex}))
                         return std::runtime_error{"Could not find vehicle call combo."};
-                    auto vehicleCall = problem.vehicleCalls.at({i, static_cast<uint8_t>(callIndex)});
+                    auto vehicleCall = problem.vehicleCalls.at({i, callIndex});
                     totalCost += vehicleCall.originNodeCosts;
 
                     currentNode = path.value().destination;
@@ -57,7 +57,7 @@ Result<int, std::runtime_error> getCost(const Problem &problem, const std::vecto
                     // It costs some moneys to deliver package
                     if (!problem.vehicleCalls.contains({i, callIndex}))
                         return std::runtime_error{"Could not find vehicle call combo."};
-                    auto vehicleCall = problem.vehicleCalls.at({i, static_cast<uint8_t>(callIndex)});
+                    auto vehicleCall = problem.vehicleCalls.at({i, callIndex});
                     totalCost += vehicleCall.destNodeCosts;
 
                     currentCalls.erase(search);

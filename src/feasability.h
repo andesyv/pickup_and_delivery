@@ -6,7 +6,7 @@
 
 // Returns nothing if feasable, error otherwise
 std::optional<std::runtime_error> checkFeasability(const Problem& problem, const std::vector<std::vector<int>>& solution) {
-    for (uint8_t i{0}; i < solution.size(); ++i) {
+    for (index_t i{0}; i < solution.size(); ++i) {
         const auto& route = solution.at(i);
         
         // Dummy vehicle is always feasable. Skip
