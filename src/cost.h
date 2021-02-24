@@ -2,22 +2,17 @@
 #include "problem.h"
 #include <optional>
 #include <unordered_set>
+#include <utility>
 
 /// Basically the same code as in the feasability check. (TODO: Refactor)
 Result<int, std::runtime_error> getCost(const Problem &problem, const std::vector<std::vector<int>> &solution) {
     int totalCost{0};
-    for (std::size_t i{0}; i < solution.size(); ++i) {
+    for (uint8_t i{0}; i < solution.size(); ++i) {
         const auto &route = solution.at(i);
 
         auto findPath = [&](const auto &a, const auto &b) {
             auto it = std::find_if(problem.trips.begin(), problem.trips.end(), [&](const Trip &t) { return t.vehicleIndex == i && t.origin == a && t.destination == b; });
             return (it != problem.trips.end()) ? std::optional<Trip>{*it} : std::nullopt;
-        };
-
-
-        auto findVehicleCallCombo = [&](const auto& c) {
-            auto it = std::find_if(problem.vehicleCalls.begin(), problem.vehicleCalls.end(), [&](const VehicleCall& t){ return t.vehicleIndex == i && t.callIndex == c; });
-            return (it != problem.vehicleCalls.end()) ? std::optional<VehicleCall>{*it} : std::nullopt;
         };
 
         std::vector<int> currentCalls;
@@ -43,10 +38,10 @@ Result<int, std::runtime_error> getCost(const Problem &problem, const std::vecto
                     totalCost += path.value().cost;
 
                     // It costs some moneys to pick up package
-                    auto vehicleCall = findVehicleCallCombo(callIndex);
-                    if (!vehicleCall)
+                    if (!problem.vehicleCalls.contains({i, callIndex}))
                         return std::runtime_error{"Could not find vehicle call combo."};
-                    totalCost += vehicleCall.value().originNodeCosts;
+                    auto vehicleCall = problem.vehicleCalls.at({i, static_cast<uint8_t>(callIndex)});
+                    totalCost += vehicleCall.originNodeCosts;
 
                     currentNode = path.value().destination;
                 }
@@ -60,10 +55,10 @@ Result<int, std::runtime_error> getCost(const Problem &problem, const std::vecto
                     currentNode = path.value().destination;
 
                     // It costs some moneys to deliver package
-                    auto vehicleCall = findVehicleCallCombo(callIndex);
-                    if (!vehicleCall)
+                    if (!problem.vehicleCalls.contains({i, callIndex}))
                         return std::runtime_error{"Could not find vehicle call combo."};
-                    totalCost += vehicleCall.value().destNodeCosts;
+                    auto vehicleCall = problem.vehicleCalls.at({i, static_cast<uint8_t>(callIndex)});
+                    totalCost += vehicleCall.destNodeCosts;
 
                     currentCalls.erase(search);
                 }

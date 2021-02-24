@@ -2,10 +2,11 @@
 #include "problem.h"
 #include <optional>
 #include <algorithm>
+#include <utility>
 
 // Returns nothing if feasable, error otherwise
 std::optional<std::runtime_error> checkFeasability(const Problem& problem, const std::vector<std::vector<int>>& solution) {
-    for (std::size_t i{0}; i < solution.size(); ++i) {
+    for (uint8_t i{0}; i < solution.size(); ++i) {
         const auto& route = solution.at(i);
         
         // Dummy vehicle is always feasable. Skip
@@ -47,11 +48,6 @@ std::optional<std::runtime_error> checkFeasability(const Problem& problem, const
             return (it != problem.trips.end()) ? std::optional<Trip>{*it} : std::nullopt;
         };
 
-        auto findVehicleCallCombo = [&](const auto& c) {
-            auto it = std::find_if(problem.vehicleCalls.begin(), problem.vehicleCalls.end(), [&](const VehicleCall& t){ return t.vehicleIndex == i && t.callIndex == c; });
-            return (it != problem.vehicleCalls.end()) ? std::optional<VehicleCall>{*it} : std::nullopt;
-        };
-
         // Route timeslots
         currentCalls.clear();
         int time{vehicle.startingTime}; // Time elapsed since start
@@ -82,10 +78,10 @@ std::optional<std::runtime_error> checkFeasability(const Problem& problem, const
                     time = call.lowerTimewindowDelivery;
 
                 // Take some time to pick up package
-                auto vehicleCall = findVehicleCallCombo(callIndex);
-                if (!vehicleCall)
+                if (!problem.vehicleCalls.contains({i, callIndex}))
                     return std::runtime_error{"Could not find vehicle call combo."};
-                time += vehicleCall.value().originNodeTime;
+                auto vehicleCall = problem.vehicleCalls.at({i, callIndex});
+                time += vehicleCall.originNodeTime;
 
             } else {
                 auto path = findPath(currentNode, call.destination);
@@ -104,10 +100,10 @@ std::optional<std::runtime_error> checkFeasability(const Problem& problem, const
                     time = call.lowerTimewindowDelivery;
 
                 // Spend some more time delivering package
-                auto vehicleCall = findVehicleCallCombo(callIndex);
-                if (!vehicleCall)
+                if (!problem.vehicleCalls.contains({i, callIndex}))
                     return std::runtime_error{"Could not find vehicle call combo."};
-                time += vehicleCall.value().destNodeTime;
+                auto vehicleCall = problem.vehicleCalls.at({i, callIndex});
+                time += vehicleCall.destNodeTime;
                 
                 currentCalls.erase(search);
             }

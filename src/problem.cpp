@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <sstream>
 #include <fstream>
+#include <utility>
 
 std::vector<std::string_view> split(const std::string_view& str, char c) {
     std::vector<std::string_view> views;
@@ -107,18 +108,19 @@ Result<Problem, std::runtime_error> load(const std::string& path) {
 
     // Cost vehicle + call combinations
     if (next()) return std::runtime_error{"End of file"};
-    p.vehicleCalls.reserve(10);
+    // p.vehicleCalls.reserve(10);
     lines = split(str, '\n');
     for (const auto& line : lines) {
         auto data = split(line, ',');
-        p.vehicleCalls.emplace_back(
+        p.vehicleCalls[{
             stoi<uint8_t>(data[0])-1, // zero-indexed
-            stoi<uint8_t>(data[1])-1, // zero-indexed
+            stoi<uint8_t>(data[1])-1 // zero-indexed
+        }] = VehicleCall{
             stoi<int>(data[2]),
             stoi<int>(data[3]),
             stoi<int>(data[4]),
             stoi<int>(data[5])
-        );
+        };
     }
 
     return p;

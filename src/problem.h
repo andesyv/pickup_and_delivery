@@ -4,6 +4,7 @@
 #include <variant>
 #include <stdexcept>
 #include <limits>
+#include <map>
 
 // Maybe monad / neither implementation based on https://github.com/LoopPerfect/neither and std::optional
 template <typename T, typename E = std::exception>
@@ -55,8 +56,6 @@ struct Trip {
 
 /// Cost and times of vehicle + call combinations
 struct VehicleCall {
-    uint8_t vehicleIndex;
-    uint8_t callIndex;
     int originNodeTime;
     int originNodeCosts;
     int destNodeTime;
@@ -67,7 +66,7 @@ struct Problem {
     std::vector<Vehicle> vehicles;
     std::vector<Call> calls;
     std::vector<Trip> trips;
-    std::vector<VehicleCall> vehicleCalls;
+    std::map<std::pair<uint8_t, uint8_t>, VehicleCall> vehicleCalls; // vehicle index, call index
 };
 
 std::vector<std::string_view> split(const std::string_view& str, char c);
