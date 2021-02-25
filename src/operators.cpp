@@ -33,7 +33,7 @@ Solution ex2(Solution s) {
         return s;
 
     // Find two random call ids
-    const auto r = [&](){ return ran() % (max - min) + min; };
+    const auto r = [&](){ return ran() % (max + 1 - min) + min; };
     auto a{r()}, b{r()};
     // Loop until you have two different ones:
     // Note: If really unlucky might loop for a long time
@@ -61,6 +61,7 @@ Solution ex2(Solution s) {
                     bpos.second = it;
         }
     }
+
     // Swap first:
     std::swap(*apos.first, *bpos.first);
     // Swap last:
@@ -76,7 +77,7 @@ Solution ex3(Solution s) {
         return s;
 
     // Find three random call ids
-    const auto r = [&](){ return ran() % (max - min) + min; };
+    const auto r = [&](){ return ran() % (max + 1 - min) + min; };
     auto a{r()}, b{r()}, c{r()};
     // Loop until you have three different ones:
     // Note: If really unlucky might loop for a long time
@@ -113,6 +114,7 @@ Solution ex3(Solution s) {
                     cpos.second = it;
         }
     }
+
     // Swap first:
     std::swap(*apos.first, *bpos.first);
     std::swap(*bpos.first, *cpos.first);
@@ -125,6 +127,29 @@ Solution ex3(Solution s) {
 
 // 1-reinsert operator
 Solution ins1(Solution s) {
+    const auto [min, max] = find_nested_minmax(s.begin(), s.end());
+    if (min == max)
+        return s;
+
+    // Find a random call id
+    const auto a = ran() % (max + 1 - min) + min;
+
+    // Remove from list:
+    for (auto& l : s)
+        std::erase(l, a);
+    
+    // Insert two of call id into random car:
+    auto& car = s[ran() % s.size()];
+    // Optional hint to compiler to add more make next two inserts cheaper
+    car.reserve(car.size() + 2);
+    if (car.empty())
+        car.push_back(a);
+    else
+        car.insert(car.begin() + ran() % car.size(), a);
+
+    // No reason to check second time because size will atleast be 1
+    car.insert(car.begin() + ran() % car.size(), a);
+
     return s;
 }
 }
