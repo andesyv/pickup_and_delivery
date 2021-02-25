@@ -76,6 +76,7 @@
         "xlocmon": "cpp",
         "xloctime": "cpp",
         "xtree": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "future": "cpp"
     }
 }
