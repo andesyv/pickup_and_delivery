@@ -7,8 +7,9 @@
 #include <numeric>
 #include "common.h"
 #include <chrono>
+#include "operators.h"
 
-std::vector<std::vector<int>> blindRandomSearch(const Problem& p) {
+Solution blindRandomSearch(const Problem& p) {
     constexpr int MAX_SEARCH = 10000;
     auto best = genInitialSolution(p); // init to dummy solution
     auto cost = getCost(p, best).val_or_max();
@@ -16,6 +17,38 @@ std::vector<std::vector<int>> blindRandomSearch(const Problem& p) {
     for (int i{0}; i < MAX_SEARCH; ++i) {
         auto current = genRandSolution(p);
         auto result = checkFeasability(p, current);
+        if (!result) {
+            auto newCost = getCost(p, current).val_or_max();
+            if (newCost && newCost < cost) {
+                best = current;
+                cost = newCost;
+            }
+        }
+    }
+
+    return best;
+}
+
+Solution localSearch(const Problem& p) {
+    constexpr int MAX_SEARCH = 10000;
+    // Random engine, seeded by current time.
+    static std::default_random_engine ran{static_cast<unsigned int>(std::time(nullptr))};
+
+    auto best = genInitialSolution(p); // init to dummy solution
+    auto cost = getCost(p, best).val_or_max();
+
+    for (int i{0}; i < MAX_SEARCH; ++i) {
+        const auto r = ran() % 100 * 0.01f;
+
+        // Available operators
+        const std::vector operators{
+            op::ex2,
+            op::ex3,
+            op::ins1
+        };
+
+        const auto current = r < 0.4f ? operators[0](best) : r < 0.4f + 0.3f ? operators[1](best) : operators[2](best);
+        const auto result = checkFeasability(p, current);
         if (!result) {
             auto newCost = getCost(p, current).val_or_max();
             if (newCost && newCost < cost) {
@@ -55,7 +88,8 @@ int main() {
 
         for (int i{0}; i < 10; ++i) {
             std::chrono::steady_clock::time_point t1{std::chrono::steady_clock::now()};
-            const auto solution = blindRandomSearch(problem);
+            const auto solution = localSearch(problem);
+            // const auto solution = blindRandomSearch(problem);
             auto duration = std::chrono::steady_clock::now() - t1;
 
             std::cout << "Best solution: ";    

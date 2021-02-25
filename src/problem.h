@@ -23,6 +23,7 @@ struct Result {
 };
 
 // Note: Nodes are (currently) not zero-indexed
+// Index type:
 typedef uint8_t index_t;
 
 /// Vehicle data
@@ -68,6 +69,8 @@ struct Problem {
     std::vector<Trip> trips;
     std::map<std::pair<index_t, index_t>, VehicleCall> vehicleCalls; // vehicle index, call index
 };
+
+typedef std::vector<std::vector<int>> Solution;
 
 std::vector<std::string_view> split(const std::string_view& str, char c);
 

@@ -5,8 +5,8 @@
 #include <ctime>
 
 template <std::size_t I>
-std::vector<std::vector<int>> toNestedList(const int (&a)[I]) {
-    std::vector<std::vector<int>> out;
+Solution toNestedList(const int (&a)[I]) {
+    Solution out;
     std::size_t beg{0};
     for (index_t end{0}; end <= I; ++end) { // Allow for one past end as this copies the range before the end
         if (end == I || a[end] == 0) {
@@ -20,7 +20,7 @@ std::vector<std::vector<int>> toNestedList(const int (&a)[I]) {
     return out;
 }
 
-std::vector<int> fromNestedList(const std::vector<std::vector<int>>& list) {
+std::vector<int> fromNestedList(const Solution& list) {
     std::vector<int> out;
     out.reserve(std::accumulate(list.begin(), list.end(), std::size_t{0}, [](const auto& a, const auto& b){
         return a + b.size() + 1;
@@ -35,8 +35,8 @@ std::vector<int> fromNestedList(const std::vector<std::vector<int>>& list) {
     return out;
 }
 
-std::vector<std::vector<int>> genInitialSolution(const Problem& p) {
-    std::vector<std::vector<int>> routes;
+Solution genInitialSolution(const Problem& p) {
+    Solution routes;
     routes.resize(p.vehicles.size()+1);
 
     routes.back().reserve(p.calls.size() * 2);
@@ -47,11 +47,11 @@ std::vector<std::vector<int>> genInitialSolution(const Problem& p) {
     return routes;
 }
 
-std::vector<std::vector<int>> genRandSolution(const Problem& p) {
+Solution genRandSolution(const Problem& p) {
     // Random engine, seeded by current time.
     static std::default_random_engine ran{static_cast<unsigned int>(std::time(nullptr))};
 
-    std::vector<std::vector<int>> routes;
+    Solution routes;
     const auto vSize{p.vehicles.size()};
     routes.resize(vSize+1);
 
