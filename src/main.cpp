@@ -8,16 +8,26 @@
 #include <mutex>
 #include <future>
 
-int main() {
+int main(int argc, char *argv[]) {
     std::cout << "Hello world!" << std::endl;
 
-    for (const auto& file : {
-        "./src/data/Call_7_Vehicle_3.txt",
-        "./src/data/Call_18_Vehicle_5.txt",
-        "./src/data/Call_035_Vehicle_07.txt",
-        "./src/data/Call_080_Vehicle_20.txt",
-        "./src/data/Call_130_Vehicle_40.txt"
-        }) {
+    std::vector files{
+        "./data/Call_7_Vehicle_3.txt",
+        "./data/Call_18_Vehicle_5.txt",
+        "./data/Call_035_Vehicle_07.txt",
+        "./data/Call_080_Vehicle_20.txt",
+        "./data/Call_130_Vehicle_40.txt"
+    };
+
+    // Possibility to run with argument paths aswell
+    // If that is the case, use them instead
+    if (1 < argc) {
+        files.clear();
+        for (int i{1}; i < argc; ++i)
+            files.push_back(argv[i]);
+    }
+
+    for (const auto& file : files) {
         
         std::cout << std::endl << std::endl << "File: " << file << std::endl;
         long long totalTime{0};
