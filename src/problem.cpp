@@ -4,6 +4,7 @@
 #include <sstream>
 #include <fstream>
 #include <utility>
+#include <numeric>
 
 std::vector<std::string_view> split(const std::string_view& str, char c) {
     std::vector<std::string_view> views;
@@ -124,4 +125,21 @@ Result<Problem, std::runtime_error> load(const std::string& path) {
     }
 
     return p;
+}
+
+std::vector<int> fromNestedList(const Solution& list) {
+    std::vector<int> out;
+    out.reserve(
+        std::accumulate(list.begin(), list.end(), std::size_t{0}, [](const auto& a, const auto& b){
+            return a + b.size() + 1;
+        })
+    );
+    for (std::size_t i{0}; i < list.size(); ++i) {
+        auto inner = list.at(i);
+        for (const auto& v : inner)
+            out.push_back(v+1);
+        if (i < list.size() - 1)
+            out.push_back(0);
+    }
+    return out;
 }

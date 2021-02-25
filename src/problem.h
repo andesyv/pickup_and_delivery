@@ -86,3 +86,22 @@ inline index_t stoi(const std::string_view& sv) {
 }
 
 Result<Problem, std::runtime_error> load(const std::string& path);
+
+
+template <std::size_t I>
+Solution toNestedList(const int (&a)[I]) {
+    Solution out;
+    std::size_t beg{0};
+    for (index_t end{0}; end <= I; ++end) { // Allow for one past end as this copies the range before the end
+        if (end == I || a[end] == 0) {
+            out.push_back(std::vector<int>{a + beg, a + end});
+            for (auto& v : out.back())
+                v -= 1;
+
+            beg = end + 1;
+        }
+    }
+    return out;
+}
+
+std::vector<int> fromNestedList(const Solution& list);
