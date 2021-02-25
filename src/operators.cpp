@@ -40,27 +40,33 @@ Solution ex2(Solution s) {
     while (a == b)
         b = r();
 
-    const auto& end = s.back().end();
     // It should be guaranteed that the random calls are represented in the solution (else it would be invalid)
-    auto    apos{std::make_pair(end, end)},
-            bpos{std::make_pair(end, end)};
+    std::pair<int*, int*>   apos{std::make_pair(nullptr, nullptr)},
+                            bpos{std::make_pair(nullptr, nullptr)};
     for (auto& l : s) {
         for (auto it{l.begin()}; it != l.end(); ++it) {
             const auto& v = *it;
 
             if (v == a)
-                if (apos.first == end)
-                    apos.first = it;
+                if (!apos.first)
+                    apos.first = &(*it);
                 else
-                    apos.second = it;
+                    apos.second = &(*it);
 
             if (v == b)
-                if (bpos.first == end)
-                    bpos.first = it;
+                if (!bpos.first)
+                    bpos.first = &(*it);
                 else
-                    bpos.second = it;
+                    bpos.second = &(*it);
         }
     }
+
+#ifdef _DEBUG
+    // Early termination in case we somehow ended up with nullptr's
+    for (const auto& [a, b] : {apos, bpos})
+        if (!a || !b)
+            throw std::runtime_error{"Attempting to swap nullptr"};
+#endif
 
     // Swap first:
     std::swap(*apos.first, *bpos.first);
@@ -86,34 +92,40 @@ Solution ex3(Solution s) {
     while (a == c || b == c)
         c = r();
 
-    const auto& end = s.back().end();
     // It should be guaranteed that the random calls are represented in the solution (else it would be invalid)
-    auto    apos{std::make_pair(end, end)},
-            bpos{std::make_pair(end, end)},
-            cpos{std::make_pair(end, end)};
+    std::pair<int*, int*>   apos{std::make_pair(nullptr, nullptr)},
+                            bpos{std::make_pair(nullptr, nullptr)},
+                            cpos{std::make_pair(nullptr, nullptr)};
     for (auto& l : s) {
         for (auto it{l.begin()}; it != l.end(); ++it) {
             const auto& v = *it;
 
             if (v == a)
-                if (apos.first == end)
-                    apos.first = it;
+                if (!apos.first)
+                    apos.first = &(*it);
                 else
-                    apos.second = it;
+                    apos.second = &(*it);
 
             if (v == b)
-                if (bpos.first == end)
-                    bpos.first = it;
+                if (!bpos.first)
+                    bpos.first = &(*it);
                 else
-                    bpos.second = it;
+                    bpos.second = &(*it);
 
             if (v == c)
-                if (cpos.first == end)
-                    cpos.first = it;
+                if (!cpos.first)
+                    cpos.first = &(*it);
                 else
-                    cpos.second = it;
+                    cpos.second = &(*it);
         }
     }
+
+#ifdef _DEBUG
+    // Early termination in case we somehow ended up with nullptr's
+    for (const auto& [a, b] : {apos, bpos, cpos})
+        if (!a || !b)
+            throw std::runtime_error{"Attempting to swap nullptr"};
+#endif
 
     // Swap first:
     std::swap(*apos.first, *bpos.first);
