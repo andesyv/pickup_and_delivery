@@ -6,17 +6,19 @@
 #include <type_traits>
 
 namespace op {
-Solution ex3(Solution s) {
-    return s;
-}
-
+// 2-exchange operator
 Solution ex2(Solution s) {
     return s;
 }
 
-Solution ins1(Solution s) {
+// 3-exchange operator
+Solution ex3(Solution s) {
     return s;
 }
+
+// 1-reinsert operator
+Solution ins1(Solution s) {
+    return s;
 }
 
 // Fuck yeah concepts!
@@ -24,3 +26,4 @@ template <typename F>
 concept Operator = requires(F f) {
     std::function<Solution(Solution)>{f};
 };
+}
