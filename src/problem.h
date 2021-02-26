@@ -20,6 +20,10 @@ struct Result {
     T max() const { return std::numeric_limits<T>::max(); }
     T val_or_max() const { return static_cast<bool>(*this) ? val() : max(); }
     T operator->() const { return std::get<T>(value); }
+
+    // Prevent all implicit conversions from Result
+    template <typename K>
+    operator K() const = delete;
 };
 
 // Note: Nodes are (currently) not zero-indexed

@@ -8,3 +8,4 @@ Solution genRandSolution(const Problem& p);
 // Searches
 Solution blindRandomSearch(const Problem& p);
 Solution localSearch(const Problem& p);
+Solution simulatedAnnealing(const Problem& p);

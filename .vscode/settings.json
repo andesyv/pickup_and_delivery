@@ -79,7 +79,8 @@
         "variant": "cpp",
         "future": "cpp",
         "condition_variable": "cpp",
-        "latch": "cpp"
+        "latch": "cpp",
+        "numbers": "cpp"
     },
     "cmake.generator": "Visual Studio 16 2019",
     "cmake.configureSettings": { "PARALLEL_EXECUTION": "ON" }
