@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 
         const auto loop = [&](std::promise<int>&& p) {
             std::chrono::steady_clock::time_point t1{std::chrono::steady_clock::now()};
-            const auto solution = blindRandomSearch(problem);
+            const auto solution = localSearch(problem);
             auto duration = std::chrono::steady_clock::now() - t1;
 
             // Scope so mutex lock can do it's thing.

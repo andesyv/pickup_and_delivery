@@ -77,13 +77,13 @@ Solution localSearch(const Problem& p) {
     static std::default_random_engine ran{static_cast<unsigned int>(std::time(nullptr))};
     // Available operators
     const std::vector operators{
-        op::ex2,
-        op::ex3,
-        op::ins1
+        op::ex2_comp,
+        op::ex3_comp,
+        op::ins1_comp
     };
 
 
-    auto best = genInitialSolution(p); // init to dummy solution
+    auto best = fromNestedListZeroIndexed(genInitialSolution(p)); // init to dummy solution
     auto cost = getCost(p, best).val_or_max();
 
     for (int i{0}; i < MAX_SEARCH; ++i) {
@@ -102,7 +102,7 @@ Solution localSearch(const Problem& p) {
     }
 
 
-    return best;
+    return toNestedList(best);
 }
 
 Solution simulatedAnnealing(const Problem& p) {
