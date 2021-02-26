@@ -1,7 +1,7 @@
 #include "heuristics.h"
 #include "operators.h"
 #include "cost.h"
-#include "feasability.h"
+#include "feasibility.h"
 #include <random>
 #include <ctime>
 #include <numbers>
@@ -57,7 +57,7 @@ Solution blindRandomSearch(const Problem& p) {
 
     for (int i{0}; i < MAX_SEARCH; ++i) {
         const auto current = genRandSolution(p);
-        const auto result = checkFeasability(p, current);
+        const auto result = checkfeasibility(p, current);
         if (!result) {
             const auto newCost = getCost(p, current).val_or_max();
             if (newCost && newCost < cost) {
@@ -91,7 +91,7 @@ Solution localSearch(const Problem& p) {
         const auto r = ran() % 100 * 0.01f;
         const auto current = r < 0.4f ? operators[0](best) : r < 0.4f + 0.3f ? operators[1](best) : operators[2](best);
 
-        const auto result = checkFeasability(p, current);
+        const auto result = checkfeasibility(p, current);
         if (!result) {
             const auto newCost = getCost(p, current).val_or_max();
             if (newCost && newCost < cost) {
@@ -141,7 +141,7 @@ Solution simulatedAnnealing(const Problem& p) {
         const auto current = r < 0.4f ? operators[0](incumbent) : r < 0.4f + 0.3f ? operators[1](incumbent) : operators[2](incumbent);
 
         // Check if solution is feasible
-        const auto result = checkFeasability(p, current);
+        const auto result = checkfeasibility(p, current);
         if (!result) {
             const auto cost = getCost(p, current);
             if (cost) {

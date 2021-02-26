@@ -1,13 +1,13 @@
-#include "feasability.h"
+#include "feasibility.h"
 #include <algorithm>
 #include <utility>
 
 
-std::optional<std::runtime_error> checkFeasability(const Problem& problem, const Solution& solution) {
+std::optional<std::runtime_error> checkfeasibility(const Problem& problem, const Solution& solution) {
     for (index_t i{0}; i < solution.size(); ++i) {
         const auto& route = solution.at(i);
         
-        // Dummy vehicle is always feasable. Skip
+        // Dummy vehicle is always feasible. Skip
         if (problem.vehicles.size() <= i)
             continue;
         
