@@ -77,6 +77,10 @@
         "xloctime": "cpp",
         "xtree": "cpp",
         "variant": "cpp",
-        "future": "cpp"
-    }
+        "future": "cpp",
+        "condition_variable": "cpp",
+        "latch": "cpp"
+    },
+    "cmake.generator": "Visual Studio 16 2019",
+    "cmake.configureSettings": { "PARALLEL_EXECUTION": "ON" }
 }

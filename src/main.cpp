@@ -91,6 +91,9 @@ int main(int argc, char *argv[]) {
         promises.resize(THREAD_COUNT);
         returnVals.reserve(THREAD_COUNT);
 
+#ifdef PARALLEL_EXECUTION
+#pragma message("PARALLEL_EXECUTION is enabled")
+
         // Init threads
         for (auto i{0}; i < THREAD_COUNT; ++i) {
             auto p = std::move(promises[i]);
@@ -99,12 +102,31 @@ int main(int argc, char *argv[]) {
         }
 
         // Wait for all threads to finish
-        for (auto& t : threads)
+        // for (auto& [t, f] : Zip{threads, returnVals}) {
+        //     t.join();
+        //     if (0 != f.get())
+        //         return f.get();
+        // }
+
+        auto [tit, rit] = std::make_tuple(threads.begin(), returnVals.begin());
+        for (; tit != threads.end() && rit != returnVals.end(); ++tit, ++rit) {
+            auto& t = *tit;
+            auto& f = *rit;
             t.join();
-        
-        for (auto& f : returnVals)
             if (0 != f.get())
                 return f.get();
+        }
+
+#else
+        // If non-multithread, run loops manually
+        for (auto i{0}; i < THREAD_COUNT; ++i) {
+            auto p = std::move(promises[i]);
+            auto f = p.get_future();
+            loop(std::move(p));
+            if (0 != f.get())
+                return f.get();
+        }
+#endif
 
         auto improvementPercent = [&](){
             auto initCost = getCost(problem, genInitialSolution(problem));

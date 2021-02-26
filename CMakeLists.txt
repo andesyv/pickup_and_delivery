@@ -7,4 +7,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+option(PARALLEL_EXECUTION "Run iterations in parallel, utilizing multiple threads" ON)
+if(PARALLEL_EXECUTION)
+    add_compile_definitions(PARALLEL_EXECUTION)
+endif()
+
 add_subdirectory(src)
