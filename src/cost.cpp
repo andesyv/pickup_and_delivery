@@ -6,16 +6,17 @@
 Result<int, std::runtime_error> getCost(const Problem &problem, const Solution& solution) {
     int totalCost{0};
     for (index_t i{0}; i < solution.size(); ++i) {
-        const auto &route = solution.at(i);
+        const auto &route{solution[i]};
 
-        auto findPath = [&](const auto &a, const auto &b) {
+        const auto findPath = [&](const auto &a, const auto &b) {
             auto it = std::find_if(problem.trips.begin(), problem.trips.end(), [&](const Trip &t) { return t.vehicleIndex == i && t.origin == a && t.destination == b; });
             return (it != problem.trips.end()) ? std::optional<Trip>{*it} : std::nullopt;
         };
 
         std::vector<int> currentCalls;
+        currentCalls.reserve(problem.calls.size());
         if (i < problem.vehicles.size()) {
-            const auto &vehicle = problem.vehicles.at(i);
+            const auto &vehicle{problem.vehicles[i]};
             int currentNode{vehicle.homeNodeIndex};
             /** Logic:
              * When adding route, first traverse to route node.
@@ -23,39 +24,41 @@ Result<int, std::runtime_error> getCost(const Problem &problem, const Solution& 
              */
             for (auto callIndex : route)
             {
-                const auto &call = problem.calls.at(callIndex);
-                auto search = std::find(currentCalls.begin(), currentCalls.end(), callIndex);
+                const auto &call{problem.calls[callIndex]};
+                const auto search{std::find(currentCalls.begin(), currentCalls.end(), callIndex)};
                 if (search == currentCalls.end())
                 {
                     // Origin
                     currentCalls.push_back(callIndex);
                     // Since adding new route, traverse to start of route.
-                    auto path = findPath(currentNode, call.origin);
-                    if (!path)
+                    const auto pOpt = findPath(currentNode, call.origin);
+                    if (!pOpt)
                         return std::runtime_error{"Could not find route path."};
-                    totalCost += path.value().cost;
+                    const auto path{pOpt.value()};
+                    totalCost += path.cost;
 
                     // It costs some moneys to pick up package
                     if (!problem.vehicleCalls.contains({i, callIndex}))
                         return std::runtime_error{"Could not find vehicle call combo."};
-                    auto vehicleCall = problem.vehicleCalls.at({i, callIndex});
+                    const auto vehicleCall = problem.vehicleCalls.at({i, callIndex});
                     totalCost += vehicleCall.originNodeCosts;
 
-                    currentNode = path.value().destination;
+                    currentNode = path.destination;
                 }
                 else
                 {
                     // Destination
-                    auto path = findPath(currentNode, call.destination);
-                    if (!path)
+                    const auto pOpt = findPath(currentNode, call.destination);
+                    if (!pOpt)
                         return std::runtime_error{"Could not find route path."};
-                    totalCost += path.value().cost;
-                    currentNode = path.value().destination;
+                    const auto path{pOpt.value()};
+                    totalCost += path.cost;
+                    currentNode = path.destination;
 
                     // It costs some moneys to deliver package
                     if (!problem.vehicleCalls.contains({i, callIndex}))
                         return std::runtime_error{"Could not find vehicle call combo."};
-                    auto vehicleCall = problem.vehicleCalls.at({i, callIndex});
+                    const auto vehicleCall = problem.vehicleCalls.at({i, callIndex});
                     totalCost += vehicleCall.destNodeCosts;
 
                     currentCalls.erase(search);
@@ -63,7 +66,6 @@ Result<int, std::runtime_error> getCost(const Problem &problem, const Solution& 
             }
         } else {
             for (auto callIndex : std::unordered_set<int>{route.begin(), route.end()}) {
-                const auto& call = problem.calls.at(callIndex);
                 totalCost += call.costOfNotTransporting;
             }
         }

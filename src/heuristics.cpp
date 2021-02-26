@@ -88,8 +88,8 @@ Solution localSearch(const Problem& p) {
 
     for (int i{0}; i < MAX_SEARCH; ++i) {
         // Use random operator
-        const auto r = ran() % 100 * 0.01f;
-        const auto current = r < 0.4f ? operators[0](best) : r < 0.4f + 0.3f ? operators[1](best) : operators[2](best);
+        const auto r{ran() % 100 * 0.01f};
+        const auto current{r < 0.4f ? operators[0](best) : r < 0.4f + 0.3f ? operators[1](best) : operators[2](best)};
 
         const auto result = checkfeasibility(p, current);
         if (!result) {
