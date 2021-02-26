@@ -52,11 +52,11 @@ Solution blindRandomSearch(const Problem& p) {
     constexpr int MAX_SEARCH = 10000;
 
     
-    auto best = genInitialSolution(p); // init to dummy solution
+    auto best = fromNestedListZeroIndexed(genInitialSolution(p)); // init to dummy solution
     auto cost = getCost(p, best).val_or_max();
 
     for (int i{0}; i < MAX_SEARCH; ++i) {
-        const auto current = genRandSolution(p);
+        const auto current = fromNestedListZeroIndexed(genRandSolution(p));
         const auto result = checkfeasibility(p, current);
         if (!result) {
             const auto newCost = getCost(p, current).val_or_max();
@@ -68,7 +68,7 @@ Solution blindRandomSearch(const Problem& p) {
     }
 
 
-    return best;
+    return toNestedList(best);
 }
 
 Solution localSearch(const Problem& p) {

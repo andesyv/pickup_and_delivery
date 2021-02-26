@@ -127,6 +127,19 @@ Result<Problem, std::runtime_error> load(const std::string& path) {
     return p;
 }
 
+Solution toNestedList(const SolutionComp& s) {
+    Solution out;
+    std::size_t beg{0};
+    for (index_t end{0}; end <= s.size(); ++end) { // Allow for one past end as this copies the range before the end
+        if (end == s.size() || s[end] == -1) {
+            out.push_back(std::vector<int>{s.begin() + beg, s.begin() + end});
+
+            beg = end + 1;
+        }
+    }
+    return out;
+}
+
 std::vector<int> fromNestedList(const Solution& list) {
     std::vector<int> out;
     out.reserve(
@@ -140,6 +153,23 @@ std::vector<int> fromNestedList(const Solution& list) {
             out.push_back(v+1);
         if (i < list.size() - 1)
             out.push_back(0);
+    }
+    return out;
+}
+
+SolutionComp fromNestedListZeroIndexed(const Solution& list) {
+    std::vector<int> out;
+    out.reserve(
+        std::accumulate(list.begin(), list.end(), std::size_t{0}, [](const auto& a, const auto& b){
+            return a + b.size() + 1;
+        })
+    );
+    for (std::size_t i{0}; i < list.size(); ++i) {
+        auto inner = list.at(i);
+        for (const auto& v : inner)
+            out.push_back(v);
+        if (i < list.size() - 1)
+            out.push_back(-1);
     }
     return out;
 }

@@ -75,6 +75,12 @@ struct Problem {
 };
 
 typedef std::vector<std::vector<int>> Solution;
+/** Compact memory layout solution representation
+ * Since it's a one dimensional vector the memory representation
+ * is more or less guaranteed to be sequential, meaning that
+ * it better preserves cache locality.
+ */
+typedef std::vector<int> SolutionComp;
 
 std::vector<std::string_view> split(const std::string_view& str, char c);
 
@@ -108,4 +114,25 @@ Solution toNestedList(const int (&a)[I]) {
     return out;
 }
 
+Solution toNestedList(const SolutionComp& s);
+
 std::vector<int> fromNestedList(const Solution& list);
+SolutionComp fromNestedListZeroIndexed(const Solution& list);
+
+// https://stackoverflow.com/questions/60151514/using-stdvector-as-view-on-to-raw-memory
+template<typename T>
+class array_view {
+   T* ptr_;
+   std::size_t len_;
+public:
+   array_view(T* ptr, std::size_t len) noexcept: ptr_{ptr}, len_{len} {}
+
+   T& operator[](int i) noexcept { return ptr_[i]; }
+   T const& operator[](int i) const noexcept { return ptr_[i]; }
+   auto size() const noexcept { return len_; }
+
+   auto begin() noexcept { return ptr_; }
+   auto begin() const noexcept { return ptr_; }
+   auto end() noexcept { return ptr_ + len_; }
+   auto end() const noexcept { return ptr_ + len_; }
+};
