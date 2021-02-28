@@ -28,7 +28,7 @@ struct Result {
 
 // Note: Nodes are (currently) not zero-indexed
 // Index type:
-typedef uint8_t index_t;
+typedef uint16_t index_t;
 
 /// Vehicle data
 struct Vehicle {
