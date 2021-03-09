@@ -81,7 +81,11 @@
         "condition_variable": "cpp",
         "latch": "cpp",
         "numbers": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "bit": "cpp",
+        "clocale": "cpp",
+        "resumable": "cpp",
+        "stop_token": "cpp"
     },
     "cmake.generator": "Visual Studio 16 2019",
     "cmake.configureSettings": { "PARALLEL_EXECUTION": "ON", "ALL_ALGORITHMS": "ON", "FILE_OUTPUT": "ON" }
