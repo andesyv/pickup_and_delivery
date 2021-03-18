@@ -80,6 +80,8 @@ int main(int argc, char *argv[])
         {
             std::cout << "Algorithm: " << algname << std::endl;
 
+#else
+            const auto& [search, algname] = std::make_pair(simulatedAnnealing, "Simulated Annealing");
 #endif
 
             long long totalTime{0};
@@ -99,13 +101,7 @@ int main(int argc, char *argv[])
 
             const auto loop = [&](std::promise<int> &&p) {
                 std::chrono::steady_clock::time_point t1{std::chrono::steady_clock::now()};
-
-#ifdef ALL_ALGORITHMS
                 const auto solution = search(problem);
-#else
-                const auto solution = localSearch(problem);
-#endif
-
                 auto duration = std::chrono::steady_clock::now() - t1;
 
                 // Scope so mutex lock can do it's thing.
@@ -208,7 +204,6 @@ int main(int argc, char *argv[])
                 std::cout << v << ", ";
             std::cout << "Improvement (%): " << std::to_string(improvementPercent()) << std::endl;
 
-#ifdef ALL_ALGORITHMS
 #ifdef FILE_OUTPUT
             // Write results to file:
             outf << "\"" << algname << "\",";
@@ -219,12 +214,12 @@ int main(int argc, char *argv[])
                 outf << v << " ";
             outf << std::endl;
 
-        }
-
-        outf << std::endl;
-#else
+#endif
+#ifdef ALL_ALGORITHMS
         }
 #endif
+#ifdef FILE_OUTPUT
+        outf << std::endl;
 #endif
 
     }

@@ -13,12 +13,13 @@ if(PARALLEL_EXECUTION)
 endif()
 
 option(ALL_ALGORITHMS "Run all searching algorithms per file" ON)
-option(FILE_OUTPUT "Write output to a results file" ON)
 if(ALL_ALGORITHMS)
     add_compile_definitions(ALL_ALGORITHMS)
-    if(FILE_OUTPUT)
-        add_compile_definitions(FILE_OUTPUT)
-    endif()
+endif()
+
+option(FILE_OUTPUT "Write output to a results file" ON)
+if(FILE_OUTPUT)
+    add_compile_definitions(FILE_OUTPUT)
 endif()
 
 
