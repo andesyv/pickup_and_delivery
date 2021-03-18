@@ -29,6 +29,12 @@ int main(int argc, char *argv[])
         std::cout << "Failed to open output file \"output.csv\". Exiting." << std::endl;
         return 1;
     }
+
+    std::ofstream outs{"solutions.txt", std::ofstream::trunc | std::ofstream::out};
+    if (!outs) {
+        std::cout << "Failed to open output file \"solutions.txt\". Exiting." << std::endl;
+        return 1;
+    }
 #endif
 
     // Input files:
@@ -55,7 +61,7 @@ int main(int argc, char *argv[])
 #ifdef FILE_OUTPUT
         // If file output is enabled, write some file handle info at the top
         outf << std::filesystem::path{file}.filename().string() << std::endl;
-        outf << ",\"Average objective\",\"Best objective\",\"Improvement (%)\",\"Running time\",\"Best solution\"" << std::endl;
+        outf << "\"Name\",\"Average objective\",\"Best objective\",\"Improvement (%)\",\"Running time\"" << std::endl;
 #endif
 
         // Problem loading
@@ -78,7 +84,9 @@ int main(int argc, char *argv[])
 
         for (const auto& [search, algname] : searchAlgorithms)
         {
+#ifndef NDEBUG
             std::cout << "Algorithm: " << algname << std::endl;
+#endif
 
 #else
             const auto& [search, algname] = std::make_pair(simulatedAnnealing, "Simulated Annealing");
@@ -109,13 +117,14 @@ int main(int argc, char *argv[])
 #ifdef PARALLEL_EXECUTION
                     std::lock_guard lock{m};
 #endif
-
+#ifndef NDEBUG
                     std::cout << "Best solution: ";
                     for (auto l = fromNestedList(solution); auto v : l)
                     {
                         std::cout << std::to_string(v) << ",";
                     }
                     std::cout << std::endl;
+#endif
                     auto cResult = getCost(problem, solution);
                     if (!cResult)
                     {
@@ -129,13 +138,15 @@ int main(int argc, char *argv[])
                         bestCost = cost;
                         bestSolution = solution;
                     }
-                    std::cout << "Cost: " << cost << std::endl;
                     totalCost += cost;
 
                     const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
                     totalTime += ms;
 
+#ifndef NDEBUG
+                    std::cout << "Cost: " << cost << std::endl;
                     std::cout << "runtime: " << ms << "ms" << std::endl;
+#endif
                 }
 
                 // Remember to set return value
@@ -193,6 +204,7 @@ int main(int argc, char *argv[])
                 return (initCost && bestCost) ? 100.0 * (initCost.val() - bestCost.val()) / initCost.val() : 0.0;
             };
 
+#ifndef NDEBUG
             std::cout << std::endl
                       << std::endl;
 
@@ -203,16 +215,20 @@ int main(int argc, char *argv[])
             for (const auto &v : fromNestedList(bestSolution))
                 std::cout << v << ", ";
             std::cout << "Improvement (%): " << std::to_string(improvementPercent()) << std::endl;
+#endif
 
 #ifdef FILE_OUTPUT
             // Write results to file:
             outf << "\"" << algname << "\",";
             outf << totalCost / 10 << "," << bestCost << ",";
             outf << std::fixed << std::setprecision(2) << improvementPercent() << ",";
-            outf << static_cast<double>(totalTime) / 10.0 << "ms" << ",";
-            for (const auto &v : fromNestedList(bestSolution))
-                outf << v << " ";
+            outf << static_cast<double>(totalTime) / 10.0 << "ms";
             outf << std::endl;
+
+            // Write solutions to file
+            for (const auto &v : fromNestedList(bestSolution))
+                outs << v << " ";
+            outs << std::endl;
 
 #endif
 #ifdef ALL_ALGORITHMS
