@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 #endif
 
 #else
-            const auto& [search, algname] = std::make_pair(simulatedAnnealing, "Simulated Annealing");
+            const auto& [search, algname] = std::make_pair(simulatedAnnealing2ElectricBoogaloo, "Simulated Annealing 2");
 #endif
 
             long long totalTime{0};

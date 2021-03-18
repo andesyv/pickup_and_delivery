@@ -4,6 +4,7 @@
 #include <random>
 #include <ctime>
 #include <numeric>
+#include <set>
 
 template <typename T>
 auto find_nested_minmax(const T& begin, const T& end){
@@ -369,6 +370,49 @@ SolutionComp ins1_comp(SolutionComp s) {
 
     return s;
     */
+}
+
+Solution fesins(const Problem& p, Solution s) {
+    const auto [min, max] = find_nested_minmax(s.begin(), s.end());
+    if (min == max)
+        return s;
+
+    // Find a random call id
+    const auto a = ran() % (max + 1 - min) + min;
+
+    // Remove from list:
+    for (auto& l : s)
+        std::erase(l, a);
+    
+    // Find possible cars:
+    std::vector<unsigned int> carIds;
+    carIds.reserve(s.size());
+    for (auto i{0}; i < p.vehicles.size(); ++i) {
+        // If vehicle has call, add it to list.
+        const auto& ac = p.vehicles[i].availableCalls;
+        if (std::find(ac.begin(), ac.end(), a) != ac.end())
+            carIds.push_back(i);
+    }
+    // Also add dummy
+    carIds.push_back(static_cast<unsigned int>(p.vehicles.size()));
+
+    // Insert two of call id into random car:
+    auto& car = s[carIds[ran() % carIds.size()]];
+    // Optional hint to compiler to add more make next two inserts cheaper
+    car.reserve(car.size() + 2);
+    if (car.empty())
+        car.push_back(a);
+    else
+        car.insert(car.begin() + ran() % car.size(), a);
+
+    // No reason to check second time because size will atleast be 1
+    car.insert(car.begin() + ran() % car.size(), a);
+
+    return s;
+}
+
+Solution tex2(const Problem& p, Solution s) {
+    return s;
 }
 
 }
