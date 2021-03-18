@@ -139,6 +139,7 @@ Solution simulatedAnnealing(const Problem& p) {
         // Use random operator
         const auto r = ran() % 100 * 0.01f;
         const auto current = r < 0.4f ? operators[0](incumbent) : r < 0.4f + 0.3f ? operators[1](incumbent) : operators[2](incumbent);
+        // std::cout << "Temperature: " << temperature << std::endl;
 
         // Check if solution is feasible
         const auto result = checkfeasibility(p, current);
@@ -149,9 +150,11 @@ Solution simulatedAnnealing(const Problem& p) {
                 const auto costDiff = currentCost - incumbentCost;
 
                 const auto r2 = rand();
-                const auto p = jumpProbability(costDiff);
                 // Check for new local best
                 if (costDiff < 0) {
+                    // If good solution jumps, decrease temperature
+                    temperature *= std::min(static_cast<double>(currentCost) / bestCost, 1.0);
+                    coolingFactor = std::exp(std::log(0.22/temperature) / (MAX_SEARCH - i));
                     incumbent = current;
                     incumbentCost = currentCost;
 
@@ -161,7 +164,7 @@ Solution simulatedAnnealing(const Problem& p) {
                         bestCost = incumbentCost;
                     }
                 // Randomly choose a worse solution as a local best
-                } else if (r2 < p) {
+                } else if (r2 < jumpProbability(costDiff)) {
                     incumbent = current;
                     incumbentCost = currentCost;
                 }
@@ -169,6 +172,9 @@ Solution simulatedAnnealing(const Problem& p) {
                 // Should never check the cost of a infeasible solution, so just throw a logic error.
                 throw std::logic_error{"Failed to calculate cost for feasible solution"};
             }
+        } else {
+            // If we didn't find anything or jump to a random solution, increase the chance for random next time.
+            // temperature *= 1.01;
         }
     }
     return best;
