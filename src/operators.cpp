@@ -396,6 +396,26 @@ Solution fesins(const Problem& p, Solution s) {
     // Also add dummy
     carIds.push_back(static_cast<unsigned int>(p.vehicles.size()));
 
+    // Find the one with least momentary weight ratio (filter out ones that already have too much weight):
+    // Weight ratio is calculated as max(currentWeight_0, currentWeight_1, ..., currentWeight_n) / maxWeight
+    auto leastWeightRatio{std::make_pair(std::numeric_limits<double>::max(), carIds.back())};
+    for (unsigned int i{0}; i < carIds.size() - 1; ++i) {
+        const auto maxCapacity = p.vehicles[i].capacity;
+        int capacity{0};
+        double ratio{0.0};
+        std::set<int> calls{};
+        for (const auto& route{s[i]}; const auto call : route) {
+            if (calls.insert(call).second) {
+                capacity += p.calls[call].size;
+                ratio = std::max(ratio, static_cast<double>(capacity) / maxCapacity);
+            } else
+                capacity -= p.calls[call].size;
+        }
+
+        if (ratio < leastWeightRatio.first && ratio < 1.0)
+            leastWeightRatio = {ratio, i};
+    }
+
     // Insert two of call id into random car:
     auto& car = s[carIds[ran() % carIds.size()]];
     // Optional hint to compiler to add more make next two inserts cheaper
