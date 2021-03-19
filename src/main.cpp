@@ -79,7 +79,8 @@ int main(int argc, char *argv[])
         const std::vector searchAlgorithms{
             std::make_pair(blindRandomSearch, "Random Search"),
             std::make_pair(localSearch, "Local Search"),
-            std::make_pair(simulatedAnnealing, "Simulated Annealing")
+            std::make_pair(simulatedAnnealing, "Simulated Annealing (old)"),
+            std::make_pair(simulatedAnnealing2ElectricBoogaloo, "Simulated Annealing (new)")
         };
 
         for (const auto& [search, algname] : searchAlgorithms)
