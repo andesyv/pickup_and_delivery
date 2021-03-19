@@ -5,6 +5,8 @@
 #include <ctime>
 #include <numeric>
 #include <set>
+#include <array>
+#include <optional>
 
 template <typename T>
 auto find_nested_minmax(const T& begin, const T& end){
@@ -431,7 +433,81 @@ Solution fesins(const Problem& p, Solution s) {
     return s;
 }
 
-Solution tex2(const Problem& p, Solution s) {
+Solution freorder(const Problem& p, Solution s) {
+    // Find cars we can operate on
+    std::vector<uint16_t> applicableCars;
+    applicableCars.reserve(s.size()-1);
+    for (auto i{0}; i < s.size()-1; ++i)
+        if (4 <= s[i].size())
+            applicableCars.push_back(i);
+    
+    // Early exit if we can't do any operations
+    if (applicableCars.empty())
+        return s;
+
+    const auto carIndex = applicableCars.at(ran() % applicableCars.size());
+    auto& car = s.at(carIndex);
+    // Choose two random calls from car:
+    int a{car.at(ran() % car.size())},b{a};
+    while (b == a)
+        b = car.at(ran() % car.size());
+
+    // Each possible configuration for sets:
+    const std::array<std::array<int, 4>, 6> configurations{
+        std::to_array({a, b, a, b}),
+        std::to_array({a, a, b, b}),
+        std::to_array({a, b, b, a}),
+        std::to_array({b, a, b, a}),
+        std::to_array({b, b, a, a}),
+        std::to_array({b, a, a, b}),
+    };
+
+    // Check for each possible configuration if we find any that fits the time schedule:
+    const auto conf = [&]() -> std::optional<std::array<int, 4>> {
+        for (const auto& conf : configurations) {
+            bool bPossible{true};
+            std::set<int> calls;
+            auto time{p.vehicles.at(carIndex).startingTime};
+
+            for (const auto& callId : conf) {
+                const auto& call = p.calls.at(callId);
+                const bool bInserted = calls.insert(callId).second;
+                if ((bInserted ? call.upperTimewindowPickup : call.upperTimewindowDelivery) < time) {
+                    bPossible = false;
+                    break;
+                }
+                time = std::max(bInserted ? call.lowerTimewindowPickup : call.lowerTimewindowDelivery, time);
+            }
+
+            if (bPossible)
+                return conf;
+        }
+
+        return std::nullopt;
+    }();
+
+    // Exit if no configurations worked
+    if (!conf)
+        return s;
+    
+    // If we found a working configuration, swap according to that one:
+    std::array poss{car.end(), car.end(), car.end(), car.end()};
+    unsigned int i{0};
+    for (auto it{car.begin()}; it != car.end(); ++it) {
+        if (*it == a || *it == b) {
+            poss[i] = it;
+            ++i;
+        }
+    }
+
+    // Asign the new configuration to the solution
+    for (auto j{0}; j < 4; ++j)
+        *poss.at(j) = conf->at(j);
+
+    return s;
+}
+
+Solution multishuffle(const Problem& p, Solution s) {
     return s;
 }
 

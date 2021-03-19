@@ -181,7 +181,7 @@ Solution simulatedAnnealing2ElectricBoogaloo(const Problem& p) {
     // Available operators
     const std::vector operators{
         op::fesins,
-        op::tex2,
+        op::freorder,
     };
 
 

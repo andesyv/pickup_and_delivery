@@ -27,13 +27,20 @@ SolutionComp ins1_comp(SolutionComp s);
 Solution fesins(const Problem& p, Solution s);
 
 /**
- * @brief Time observant exchange
- * 
+ * @brief time-window reorder
+ * 2-exchange that attempts to reorder solution based on time-slots
  * @param p 
  * @param s 
  * @return Solution 
  */
-Solution tex2(const Problem& p, Solution s);
+Solution freorder(const Problem& p, Solution s);
+
+/**
+ * @brief Multi-threading shuffle
+ * Uses multiple threads to simultaneously generate a bunch of
+ * random solutions and chooses the most promising looking one.
+ */
+Solution multishuffle(const Problem& p, Solution s);
 
 // Fuck yeah concepts!
 template <typename F>
