@@ -165,7 +165,7 @@ bool exchance(std::vector<int>& c1, std::vector<int>& c2) {
                             bpos{std::make_pair(nullptr, nullptr)};
     
     for (auto it{c1.begin()}; it != c1.end(); ++it) {
-        const auto& v = *it;
+        auto& v = *it;
         if (v == a)
             if (!apos.first)
                 apos.first = &v;
@@ -174,7 +174,7 @@ bool exchance(std::vector<int>& c1, std::vector<int>& c2) {
     }
 
     for (auto it{c2.begin()}; it != c2.end(); ++it) {
-        const auto& v = *it;
+        auto& v = *it;
         if (v == b)
             if (!bpos.first)
                 bpos.first = &v;
@@ -193,6 +193,11 @@ bool exchance(std::vector<int>& c1, std::vector<int>& c2) {
     std::swap(*apos.first, *bpos.first);
     // Swap last:
     std::swap(*apos.second, *bpos.second);
+
+#ifdef _DEBUG
+    if (c1.size() % 2 || c2.size() % 2)
+        throw std::runtime_error{"Invalid solution!"};
+#endif
 
     return true;
 }
@@ -618,6 +623,44 @@ Solution multishuffle(const Problem& p, Solution s) {
     randomSeed += threadCount;
 
     return best.second;
+}
+
+Solution backinsert(const Problem& p, Solution s) {
+    constexpr float EXCHANCE_CHANCE = 0.4f;
+
+    auto& dummy = s.back();
+    auto& car = s.at(ran() % (s.size() - 1));
+
+    // 40% chance to do 2-exchance instead of reinsert
+    if (ran() % 100 * 0.01 < EXCHANCE_CHANCE) {
+        // If we coudln't exchange, we can continue with the reinsert option instead.
+        if (exchance(car, dummy))
+            return s;
+    }
+
+    if (car.empty())
+        return s;
+
+    const auto v = car.at(ran() % car.size());
+    
+    // Remove from car
+    car.erase(std::remove(car.begin(), car.end(), v), car.end());
+
+    // Reinsert into dummy
+    dummy.reserve(dummy.size() + 2);
+    if (dummy.empty())
+        dummy.push_back(v);
+    else
+        dummy.insert(dummy.begin() + ran() % dummy.size(), v);
+    dummy.insert(dummy.begin() + ran() % dummy.size(), v);
+
+#ifdef _DEBUG
+    for (const auto& c : s)
+        if (c.size() % 2)
+            throw std::runtime_error{"Invalid solution!"};
+#endif
+
+    return s;
 }
 
 }

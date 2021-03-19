@@ -49,6 +49,17 @@ Solution freorder(const Problem& p, Solution s);
  */
 Solution multishuffle(const Problem& p, Solution s);
 
+/**
+ * @brief Swaps or moves from car to dummy car
+ * Takes a random car and either moves the call to the dummy,
+ * or swaps with a random call from the dummy.
+ * @param p 
+ * @param s 
+ * @return Solution 
+ */
+Solution backinsert(const Problem& p, Solution s);
+
+
 // Fuck yeah concepts!
 template <typename F>
 concept Operator = requires(F f) {
