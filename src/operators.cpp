@@ -7,6 +7,10 @@
 #include <set>
 #include <array>
 #include <optional>
+#include <thread>
+#include <future>
+#include "feasibility.h"
+#include "cost.h"
 
 template <typename T>
 auto find_nested_minmax(const T& begin, const T& end){
@@ -271,7 +275,7 @@ SolutionComp ex3_comp(SolutionComp s) {
 }
 
 // 1-reinsert operator
-Solution ins1(Solution s) {
+Solution ins1(Solution s, const std::default_random_engine& engine) {
     const auto [min, max] = find_nested_minmax(s.begin(), s.end());
     if (min == max)
         return s;
@@ -296,6 +300,10 @@ Solution ins1(Solution s) {
     car.insert(car.begin() + ran() % car.size(), a);
 
     return s;
+}
+
+Solution ins1(Solution s) {
+    return ins1(s, ran);
 }
 
 SolutionComp ins1_comp(SolutionComp s) {
@@ -508,7 +516,59 @@ Solution freorder(const Problem& p, Solution s) {
 }
 
 Solution multishuffle(const Problem& p, Solution s) {
-    return s;
+    // Set a static seed to use for random number generation
+    static auto randomSeed{static_cast<unsigned int>(std::time(nullptr))};
+    using RetType = std::optional<std::pair<int, Solution>>;
+    
+    const auto threadCount = std::thread::hardware_concurrency();
+    std::vector<std::thread> threads{};
+    threads.reserve(threadCount);
+    std::vector<std::future<RetType>> futures;
+    futures.reserve(threadCount);
+
+    const auto operation = [&p, &s](
+        std::promise<RetType>&& ret,
+        std::default_random_engine&& ran
+    ) -> void {
+        const auto newSolution = ins1(s, ran);
+        const auto feasability = checkfeasibility(p, newSolution);
+        if (!feasability) {
+            const auto cost = getCost(p, newSolution);
+            if (cost) {
+                ret.set_value(std::make_pair(cost.val_or_max(), newSolution));
+                return;
+            }
+        }
+
+        ret.set_value(std::nullopt);
+    };
+
+    // Initiate threads
+    for (unsigned int i{0}; i < threadCount; ++i) {
+        std::promise<RetType> p{};
+        futures.push_back(p.get_future());
+        threads.emplace_back(operation, std::move(p), std::default_random_engine{randomSeed + i});
+    }
+
+    // Assemble and compare threads
+    auto best = std::make_pair(std::numeric_limits<int>::max(), s);
+    for (auto i{0}; i < threads.size(); ++i) {
+        auto [t, f] = std::tie(threads.at(i), futures.at(i));
+        t.join();
+        if (!f.valid())
+            throw std::runtime_error{"Future is somehow not set..."};
+        const auto& opt = f.get();
+        if (opt) {
+            const auto& [cost, sol] = *opt;
+            if (cost < best.first)
+                best = *opt;
+        }
+    }
+
+    // Increment seed so we make sure we get different pseudo-random numbers next iteration.
+    randomSeed += threadCount;
+
+    return best.second;
 }
 
 }

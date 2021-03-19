@@ -182,6 +182,7 @@ Solution simulatedAnnealing2ElectricBoogaloo(const Problem& p) {
     const std::vector operators{
         op::fesins,
         op::freorder,
+        op::multishuffle,
     };
 
 
@@ -207,7 +208,7 @@ Solution simulatedAnnealing2ElectricBoogaloo(const Problem& p) {
         // Use random operator
         const auto r = ran() % 100 * 0.01f;
         // const auto current = r < 0.4f ? operators[0](incumbent) : r < 0.4f + 0.3f ? operators[1](incumbent) : operators[2](incumbent);
-        const auto current = r < 0.6f ? operators[0](p, incumbent) : operators[1](p, incumbent);
+        const auto current = operators[2](p, incumbent);
 
         // Check if solution is feasible
         const auto result = checkfeasibility(p, current);

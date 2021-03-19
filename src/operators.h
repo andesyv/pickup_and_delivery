@@ -4,6 +4,7 @@
 #include "problem.h"
 #include <utility>
 #include <type_traits>
+#include <random>
 
 namespace op {
 // 2-exchange operator
@@ -16,6 +17,7 @@ SolutionComp ex3_comp(SolutionComp s);
 
 // 1-reinsert operator
 Solution ins1(Solution s);
+Solution ins1(Solution s, const std::default_random_engine& engine);
 SolutionComp ins1_comp(SolutionComp s);
 
 /**
