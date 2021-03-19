@@ -153,6 +153,50 @@ SolutionComp ex2_comp(SolutionComp s) {
     return s;
 }
 
+bool exchance(std::vector<int>& c1, std::vector<int>& c2) {
+    if (c1.empty() || c2.empty())
+        return false;
+
+    const auto  a{c1.at(ran() % c1.size())},
+                b{c2.at(ran() % c2.size())};
+
+    // It should be guaranteed that the random calls are represented in the solution (else it would be invalid)
+    std::pair<int*, int*>   apos{std::make_pair(nullptr, nullptr)},
+                            bpos{std::make_pair(nullptr, nullptr)};
+    
+    for (auto it{c1.begin()}; it != c1.end(); ++it) {
+        const auto& v = *it;
+        if (v == a)
+            if (!apos.first)
+                apos.first = &v;
+            else
+                apos.second = &v;
+    }
+
+    for (auto it{c2.begin()}; it != c2.end(); ++it) {
+        const auto& v = *it;
+        if (v == b)
+            if (!bpos.first)
+                bpos.first = &v;
+            else
+                bpos.second = &v;
+    }
+
+#ifdef _DEBUG
+    // Early termination in case we somehow ended up with nullptr's
+    for (const auto& [a, b] : {apos, bpos})
+        if (!a || !b)
+            throw std::runtime_error{"Attempting to swap nullptr"};
+#endif
+
+    // Swap first:
+    std::swap(*apos.first, *bpos.first);
+    // Swap last:
+    std::swap(*apos.second, *bpos.second);
+
+    return true;
+}
+
 // 3-exchange operator
 Solution ex3(Solution s) {
     const auto [min, max] = find_nested_minmax(s.begin(), s.end());

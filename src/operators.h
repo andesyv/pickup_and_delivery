@@ -7,9 +7,12 @@
 #include <random>
 
 namespace op {
+
+/// Legacy operators:
 // 2-exchange operator
 Solution ex2(Solution s);
 SolutionComp ex2_comp(SolutionComp s);
+bool exchance(std::vector<int>& c1, std::vector<int>& c2);
 
 // 3-exchange operator
 Solution ex3(Solution s);
@@ -20,6 +23,8 @@ Solution ins1(Solution s);
 Solution ins1(Solution s, const std::default_random_engine& engine);
 SolutionComp ins1_comp(SolutionComp s);
 
+
+/// Custom operators:
 /**
  * @brief Feasible reinsert
  * Like the 1-reinsert but attempts to also create more feasible solutions
