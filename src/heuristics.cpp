@@ -8,6 +8,10 @@
 #include <cmath>
 #include <iostream>
 #include <array>
+#include <ranges>
+#include <algorithm>
+#include <numeric>
+#include "zip.hpp"
 
 Solution genInitialSolution(const Problem& p) {
     Solution routes;
@@ -244,11 +248,23 @@ Solution simulatedAnnealing2ElectricBoogaloo(const Problem& p) {
     return best;
 }
 
+template <typename T,typename U>                                                   
+auto operator+(const std::pair<T,U> & l,const std::pair<T,U> & r) {   
+    return std::make_pair(l.first+r.first,l.second+r.second);                                    
+}
+
+template <typename T,typename U>                                                   
+void operator+=(std::pair<T,U> & l,const std::pair<T,U> & r) {   
+    l = l + r;
+}
+
 Solution adaptiveSearch(const Problem& p) {
     constexpr unsigned int MAX_SEARCH = 10000;
+    constexpr unsigned int SEGMENT_SIZE = 100;
     constexpr unsigned int ESCAPE_CONDITION = 100;
     constexpr float MIN_WEIGHT = 0.1f;
     constexpr unsigned int START_WEIGHT = 10;
+    constexpr float REPLACE_WEIGHT_RATIO = 0.5f;
     // Random engine, seeded by current time.
     static std::default_random_engine ran{static_cast<unsigned int>(std::time(nullptr))};
     // Available operators (heuristics)
@@ -258,8 +274,9 @@ Solution adaptiveSearch(const Problem& p) {
         op::ins1
     });
 
-    std::array<unsigned int, operators.size()> weights;
-    unsigned int sumWeight = static_cast<int>(operators.size() * START_WEIGHT);
+    std::array<float, operators.size()> weights;
+    for (auto& w : weights)
+        w = 1.f / weights.size();
 
 
     auto best = genInitialSolution(p); // init to dummy solution
@@ -284,16 +301,9 @@ Solution adaptiveSearch(const Problem& p) {
         return ran() % 1000000 * 0.000001;
     };
 
-    const auto resetWeights = [&](){
-        for (auto& v : weights)
-            v = START_WEIGHT;
-    };
-
-    resetWeights();
-
     // Note: Annoying that c++ doesnt have const reference captures
     const auto selectOperatorIndex = [&weights = std::as_const(weights)](auto r) {
-        unsigned int acc{0};
+        auto acc{0.0};
         for (std::size_t i{0}; i < weights.size(); ++i)
             if (r < acc + weights[i])
                 return i;
@@ -306,45 +316,71 @@ Solution adaptiveSearch(const Problem& p) {
         return cost < localBestCost;
     };
 
-    for (unsigned int i{0}; i < MAX_SEARCH; ++i, ++iterationsSinceNewBest) {
-        if (ESCAPE_CONDITION < iterationsSinceNewBest) {
-            // Apply escape algorithm (something to bring us out of local optima)
-        }
+    for (unsigned int i{0}; i < MAX_SEARCH;) {
+        std::array<std::pair<unsigned int, unsigned int>, weights.size()> scores{};
+        // Just to be safe:
+        for (auto& score : scores) score = {0u, 0u};
 
-        const auto r = ran() % sumWeight;
-        const auto opIndex = selectOperatorIndex(r);
-        const auto& op = operators[opIndex];
-        const auto current = op(localBest);
-        unsigned int score = 0;
-
-        const auto result = checkfeasibility(p, current);
-        if (!result) {
-            score += 1; // Get 1 score from finding a feasible solution
-            const auto cost = getCost(p, current).val_or_max();
-            
-            if (cost < bestCost) {
-                score += 3;
-                best = current;
-                bestCost = cost;
-                iterationsSinceNewBest = 0;
+        for (unsigned int j{0}; j < SEGMENT_SIZE; ++i, ++j, ++iterationsSinceNewBest) {
+            if (ESCAPE_CONDITION < iterationsSinceNewBest) {
+                // Apply escape algorithm (something to bring us out of local optima)
             }
 
-            // Acceptance criteria:
-            if (accept(cost)) {
-                score += 1;
-                localBest = current;
-                localBestCost = cost;
+            const auto r = rand();
+            const auto opIndex = selectOperatorIndex(r);
+            const auto& op = operators[opIndex];
+            const auto current = op(localBest);
+            unsigned int score = 0;
+
+            const auto result = checkfeasibility(p, current);
+            if (!result) {
+                score += 1; // Get 1 score from finding a feasible solution
+                const auto cost = getCost(p, current).val_or_max();
+                
+                if (cost < bestCost) {
+                    score += 3;
+                    best = current;
+                    bestCost = cost;
+                    iterationsSinceNewBest = 0;
+                }
+
+                // Acceptance criteria:
+                if (accept(cost)) {
+                    score += 1;
+                    localBest = current;
+                    localBestCost = cost;
+                }
             }
+            
+            // Update scores
+            scores[opIndex] += std::make_pair(score, 1u);
         }
 
-        // Update weights
-        // Don't add weight if added weight will result in weights below min_weight
-        if (1.f * START_WEIGHT * weights.size() / (sumWeight + score) < MIN_WEIGHT)
-            if (*std::min_element(weights.begin(), weights.end()) / static_cast<float>(sumWeight + score) < MIN_WEIGHT)
-                continue;
+        // After each segment, adjust the weights to next segment using scores form last segment and control r
+        std::array<float, weights.size()> normalizedScores;
+        // Normalize according to count
+        for (auto j{0u}; j < weights.size(); ++j) {
+            const auto& [score, count] = scores[j];
+            normalizedScores[j] = count != 0 ? static_cast<float>(score) / count : 0.f;
+        }
+        // Normalize all scores so sum is 1
+        const auto sumWeight = std::accumulate(normalizedScores.begin(), normalizedScores.end(), 0.f);
+        for (auto& ns : normalizedScores)
+            ns /= sumWeight;
+        
+        // Linear blend between old and new weights:
+        for (auto [w, ns] : zip(weights, normalizedScores))
+            w = (1.f - REPLACE_WEIGHT_RATIO) * w + REPLACE_WEIGHT_RATIO * ns;
+
+        // Check if any weight is below minimum and if so, clamp and normalize again.
+        if (std::any_of(weights.begin(), weights.end(), [MIN_WEIGHT](const auto& w){ return w < MIN_WEIGHT || 1.f < w; })) {
+            float sum = 0.f;
+            for (auto& w : weights)
+                sum += w < MIN_WEIGHT ? MIN_WEIGHT : w;
             
-        weights[opIndex] += score;
-        sumWeight += score;
+            for (auto& w : weights)
+                w = w < MIN_WEIGHT ? MIN_WEIGHT : w / sum;
+        }
     }
 
     return best;
