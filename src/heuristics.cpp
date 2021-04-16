@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <numeric>
 #include "zip.hpp"
+#include <functional>
 
 Solution genInitialSolution(const Problem& p) {
     Solution routes;
@@ -261,17 +262,18 @@ void operator+=(std::pair<T,U> & l,const std::pair<T,U> & r) {
 Solution adaptiveSearch(const Problem& p) {
     constexpr unsigned int MAX_SEARCH = 10000;
     constexpr unsigned int SEGMENT_SIZE = 100;
-    constexpr unsigned int ESCAPE_CONDITION = 100;
-    constexpr float MIN_WEIGHT = 0.1f;
-    constexpr unsigned int START_WEIGHT = 10;
+    constexpr unsigned int ESCAPE_CONDITION = 1000;
+    constexpr float MIN_WEIGHT = 0.05f;
     constexpr float REPLACE_WEIGHT_RATIO = 0.5f;
     // Random engine, seeded by current time.
     static std::default_random_engine ran{static_cast<unsigned int>(std::time(nullptr))};
+
+    const auto fesins = [&](Solution s){ return op::fesins(p, s); };
     // Available operators (heuristics)
-    const auto operators = std::to_array({
-        op::ex2,
-        op::ex3,
-        op::ins1
+    const auto operators = std::to_array<std::function<Solution(Solution)>>({
+        [](auto s){ return op::ex2(s); },
+        [](auto s){ return op::ins1(s); },
+        [&p](Solution s){ return op::fesins(p, s); },
     });
 
     std::array<float, operators.size()> weights;
@@ -285,17 +287,11 @@ Solution adaptiveSearch(const Problem& p) {
     auto localBestCost = bestCost;
     
     auto iterationsSinceNewBest = 0u;
-    
-    // auto incumbentCost = getCost(p, incumbent).val_or_max();
 
-    // // Initial temperature calculated from initial cost
-    // double temperature = -bestCost/std::log(0.99);
-    // // Cooling factor calculated from iterations and initial temperature
-    // double coolingFactor = std::exp(std::log(0.22/temperature) / MAX_SEARCH);
-
-    // const auto jumpProbability = [&](const auto& costDiff){
-    //     return std::pow(std::numbers::e, -costDiff / temperature);
-    // };
+    // Temperature is here the same as percentage for acceptance. Initial temperature is 0.99.
+    double temperature = 0.70;
+    // Cooling factor calculated from iterations and initial temperature
+    double coolingFactor = std::exp(std::log(0.01 / temperature) / MAX_SEARCH);
 
     const auto rand = [&](){
         return ran() % 1000000 * 0.000001;
@@ -312,8 +308,9 @@ Solution adaptiveSearch(const Problem& p) {
         return weights.size() - 1;
     };
 
-    const auto accept = [&localBestCost = std::as_const(localBestCost)](const auto& cost) {
-        return cost < localBestCost;
+    const auto accept = [&](const auto& cost) {
+        const auto p = temperature * cost / localBestCost;
+        return cost < localBestCost || rand() < temperature;
     };
 
     for (unsigned int i{0}; i < MAX_SEARCH;) {
@@ -321,9 +318,15 @@ Solution adaptiveSearch(const Problem& p) {
         // Just to be safe:
         for (auto& score : scores) score = {0u, 0u};
 
-        for (unsigned int j{0}; j < SEGMENT_SIZE; ++i, ++j, ++iterationsSinceNewBest) {
+        for (unsigned int j{0}; j < SEGMENT_SIZE; ++i, ++j, ++iterationsSinceNewBest, temperature *= coolingFactor) {
             if (ESCAPE_CONDITION < iterationsSinceNewBest) {
                 // Apply escape algorithm (something to bring us out of local optima)
+                localBest = op::freorder(p, localBest);
+                const auto cost = getCost(p, localBest);
+                if (!cost)
+                    throw std::logic_error{"What?"};
+                localBestCost = cost.val_or_max();
+                iterationsSinceNewBest = 0;
             }
 
             const auto r = rand();
