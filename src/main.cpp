@@ -80,7 +80,8 @@ int main(int argc, char *argv[])
             std::make_pair(blindRandomSearch, "Random Search"),
             std::make_pair(localSearch, "Local Search"),
             std::make_pair(simulatedAnnealing, "Simulated Annealing (old)"),
-            std::make_pair(simulatedAnnealing2ElectricBoogaloo, "Simulated Annealing (new)")
+            std::make_pair(simulatedAnnealing2ElectricBoogaloo, "Simulated Annealing (new)"),
+            std::make_pair(adaptiveSearch, "Adaptive Search")
         };
 
         for (const auto& [search, algname] : searchAlgorithms)
@@ -90,7 +91,7 @@ int main(int argc, char *argv[])
 #endif
 
 #else
-            const auto& [search, algname] = std::make_pair(simulatedAnnealing2ElectricBoogaloo, "Simulated Annealing 2");
+            const auto& [search, algname] = std::make_pair(adaptiveSearch, "Adaptive Search");
 #endif
 
             long long totalTime{0};

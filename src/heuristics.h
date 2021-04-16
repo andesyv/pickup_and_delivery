@@ -10,3 +10,4 @@ Solution blindRandomSearch(const Problem& p);
 Solution localSearch(const Problem& p);
 Solution simulatedAnnealing(const Problem& p);
 Solution simulatedAnnealing2ElectricBoogaloo(const Problem& p);
+Solution adaptiveSearch(const Problem& p);

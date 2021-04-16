@@ -7,6 +7,7 @@
 #include <numbers>
 #include <cmath>
 #include <iostream>
+#include <array>
 
 Solution genInitialSolution(const Problem& p) {
     Solution routes;
@@ -240,5 +241,111 @@ Solution simulatedAnnealing2ElectricBoogaloo(const Problem& p) {
             }
         }
     }
+    return best;
+}
+
+Solution adaptiveSearch(const Problem& p) {
+    constexpr unsigned int MAX_SEARCH = 10000;
+    constexpr unsigned int ESCAPE_CONDITION = 100;
+    constexpr float MIN_WEIGHT = 0.1f;
+    constexpr unsigned int START_WEIGHT = 10;
+    // Random engine, seeded by current time.
+    static std::default_random_engine ran{static_cast<unsigned int>(std::time(nullptr))};
+    // Available operators (heuristics)
+    const auto operators = std::to_array({
+        op::ex2,
+        op::ex3,
+        op::ins1
+    });
+
+    std::array<unsigned int, operators.size()> weights;
+    unsigned int sumWeight = static_cast<int>(operators.size() * START_WEIGHT);
+
+
+    auto best = genInitialSolution(p); // init to dummy solution
+    auto localBest = best; // Init local best (incumbent) to dummy solution
+    auto bestCost = getCost(p, best).val_or_max();
+    auto localBestCost = bestCost;
+    
+    auto iterationsSinceNewBest = 0u;
+    
+    // auto incumbentCost = getCost(p, incumbent).val_or_max();
+
+    // // Initial temperature calculated from initial cost
+    // double temperature = -bestCost/std::log(0.99);
+    // // Cooling factor calculated from iterations and initial temperature
+    // double coolingFactor = std::exp(std::log(0.22/temperature) / MAX_SEARCH);
+
+    // const auto jumpProbability = [&](const auto& costDiff){
+    //     return std::pow(std::numbers::e, -costDiff / temperature);
+    // };
+
+    const auto rand = [&](){
+        return ran() % 1000000 * 0.000001;
+    };
+
+    const auto resetWeights = [&](){
+        for (auto& v : weights)
+            v = START_WEIGHT;
+    };
+
+    resetWeights();
+
+    // Note: Annoying that c++ doesnt have const reference captures
+    const auto selectOperatorIndex = [&weights = std::as_const(weights)](auto r) {
+        unsigned int acc{0};
+        for (std::size_t i{0}; i < weights.size(); ++i)
+            if (r < acc + weights[i])
+                return i;
+            else
+                acc += weights[i];
+        return weights.size() - 1;
+    };
+
+    const auto accept = [&localBestCost = std::as_const(localBestCost)](const auto& cost) {
+        return cost < localBestCost;
+    };
+
+    for (unsigned int i{0}; i < MAX_SEARCH; ++i, ++iterationsSinceNewBest) {
+        if (ESCAPE_CONDITION < iterationsSinceNewBest) {
+            // Apply escape algorithm (something to bring us out of local optima)
+        }
+
+        const auto r = ran() % sumWeight;
+        const auto opIndex = selectOperatorIndex(r);
+        const auto& op = operators[opIndex];
+        const auto current = op(localBest);
+        unsigned int score = 0;
+
+        const auto result = checkfeasibility(p, current);
+        if (!result) {
+            score += 1; // Get 1 score from finding a feasible solution
+            const auto cost = getCost(p, current).val_or_max();
+            
+            if (cost < bestCost) {
+                score += 3;
+                best = current;
+                bestCost = cost;
+                iterationsSinceNewBest = 0;
+            }
+
+            // Acceptance criteria:
+            if (accept(cost)) {
+                score += 1;
+                localBest = current;
+                localBestCost = cost;
+            }
+        }
+
+        // Update weights
+        // Don't add weight if added weight will result in weights below min_weight
+        if (1.f * START_WEIGHT * weights.size() / (sumWeight + score) < MIN_WEIGHT)
+            if (*std::min_element(weights.begin(), weights.end()) / static_cast<float>(sumWeight + score) < MIN_WEIGHT)
+                continue;
+            
+        weights[opIndex] += score;
+        sumWeight += score;
+    }
+
     return best;
 }
