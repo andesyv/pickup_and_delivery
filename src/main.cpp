@@ -1,3 +1,4 @@
+/*
 #include <iostream>
 #include <iomanip>
 #include <vector>
@@ -242,6 +243,17 @@ int main(int argc, char *argv[])
 #endif
 
     }
+
+    return 0;
+}
+*/
+
+#include <iostream>
+#include "window.h"
+
+int main() {
+    auto window = Window::get();
+    window.loop();
 
     return 0;
 }
