@@ -59,6 +59,8 @@ Solution multishuffle(const Problem& p, Solution s);
  */
 Solution backinsert(const Problem& p, Solution s);
 
+Solution scramble(const Problem& p, Solution s);
+
 
 // Fuck yeah concepts!
 template <typename F>

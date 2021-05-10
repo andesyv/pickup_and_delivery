@@ -663,4 +663,8 @@ Solution backinsert(const Problem& p, Solution s) {
     return s;
 }
 
+Solution scramble(const Problem& p, Solution s) {
+    return s;
+}
+
 }

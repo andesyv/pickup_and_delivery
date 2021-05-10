@@ -76,12 +76,12 @@ int main(int argc, char *argv[])
 #ifdef ALL_ALGORITHMS
 #pragma message("Building with all search algorithms")
 
-        const std::vector searchAlgorithms{
-            std::make_pair(blindRandomSearch, "Random Search"),
-            std::make_pair(localSearch, "Local Search"),
-            std::make_pair(simulatedAnnealing, "Simulated Annealing (old)"),
-            std::make_pair(simulatedAnnealing2ElectricBoogaloo, "Simulated Annealing (new)"),
-            std::make_pair(adaptiveSearch, "Adaptive Search")
+        const std::vector<std::pair<HeuristicParallellSignature, std::string>> searchAlgorithms{
+            {blindRandomSearch, "Random Search"},
+            {localSearch, "Local Search"},
+            {simulatedAnnealing, "Simulated Annealing (old)"},
+            {simulatedAnnealing2ElectricBoogaloo, "Simulated Annealing (new)"},
+            {adaptiveSearch, "Adaptive Search"}
         };
 
         for (const auto& [search, algname] : searchAlgorithms)
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 #endif
 
 #else
-            const auto& [search, algname] = std::make_pair(adaptiveSearch, "Adaptive Search");
+            const auto& [search, algname] = std::make_pair<HeuristicParallellSignature, std::string>(&adaptiveSearch, "Adaptive Search");
 #endif
 
             long long totalTime{0};
@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
             int bestCost{std::numeric_limits<int>::max()};
             std::vector<std::vector<int>> bestSolution{};
 
-            constexpr auto THREAD_COUNT = 10;
+            constexpr unsigned int THREAD_COUNT = 10;
 
 #ifdef PARALLEL_EXECUTION
             std::vector<std::thread> threads{};
@@ -109,9 +109,9 @@ int main(int argc, char *argv[])
 
             std::vector<std::future<int>> returnVals;
 
-            const auto loop = [&](std::promise<int> &&p) {
+            const auto loop = [&](std::promise<int> &&p, std::default_random_engine&& ran) {
                 std::chrono::steady_clock::time_point t1{std::chrono::steady_clock::now()};
-                const auto solution = search(problem);
+                const auto solution = search(problem, ran);
                 auto duration = std::chrono::steady_clock::now() - t1;
 
                 // Scope so mutex lock can do it's thing.
@@ -167,7 +167,8 @@ int main(int argc, char *argv[])
             {
                 auto p = std::move(promises[i]);
                 returnVals.push_back(p.get_future());
-                threads.push_back(std::thread{loop, std::move(p)});
+                auto ran = std::default_random_engine{static_cast<unsigned int>(std::time(nullptr) + i * 3)};
+                threads.push_back(std::thread{loop, std::move(p), std::move(ran)});
             }
 
             // Wait for all threads to finish
@@ -193,7 +194,7 @@ int main(int argc, char *argv[])
             {
                 auto p = std::move(promises[i]);
                 auto f = p.get_future();
-                loop(std::move(p));
+                loop(std::move(p), std::default_random_engine{static_cast<unsigned int>(std::time(nullptr))});
                 if (0 != f.get())
                     return f.get();
             }

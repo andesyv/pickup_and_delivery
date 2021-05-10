@@ -28,8 +28,12 @@ Solution genInitialSolution(const Problem& p) {
 
 Solution genRandSolution(const Problem& p) {
     // Random engine, seeded by current time.
-    static std::default_random_engine ran{static_cast<unsigned int>(std::time(nullptr))};
+    static std::default_random_engine engine{static_cast<unsigned int>(std::time(nullptr))};
 
+    return genRandSolution(p, engine);
+}
+
+Solution genRandSolution(const Problem& p, std::default_random_engine& ran) {
     Solution routes;
     const auto vSize{p.vehicles.size()};
     routes.resize(vSize+1);
@@ -54,7 +58,7 @@ Solution genRandSolution(const Problem& p) {
     return routes;
 }
 
-Solution blindRandomSearch(const Problem& p) {
+Solution blindRandomSearch(const Problem& p, std::default_random_engine& ran) {
     constexpr int MAX_SEARCH = 10000;
 
     
@@ -62,7 +66,7 @@ Solution blindRandomSearch(const Problem& p) {
     auto cost = getCost(p, best).val_or_max();
 
     for (int i{0}; i < MAX_SEARCH; ++i) {
-        const auto current = fromNestedListZeroIndexed(genRandSolution(p));
+        const auto current = fromNestedListZeroIndexed(genRandSolution(p, ran));
         const auto result = checkfeasibility(p, current);
         if (!result) {
             const auto newCost = getCost(p, current).val_or_max();
@@ -77,10 +81,8 @@ Solution blindRandomSearch(const Problem& p) {
     return toNestedList(best);
 }
 
-Solution localSearch(const Problem& p) {
+Solution localSearch(const Problem& p, std::default_random_engine& ran) {
     constexpr int MAX_SEARCH = 10000;
-    // Random engine, seeded by current time.
-    static std::default_random_engine ran{static_cast<unsigned int>(std::time(nullptr))};
     // Available operators
     const std::vector operators{
         op::ex2_comp,
@@ -111,10 +113,8 @@ Solution localSearch(const Problem& p) {
     return toNestedList(best);
 }
 
-Solution simulatedAnnealing(const Problem& p) {
+Solution simulatedAnnealing(const Problem& p, std::default_random_engine& ran) {
     constexpr int MAX_SEARCH = 10000;
-    // Random engine, seeded by current time.
-    static std::default_random_engine ran{static_cast<unsigned int>(std::time(nullptr))};
     // Available operators
     const std::vector operators{
         op::ex2,
@@ -180,10 +180,8 @@ Solution simulatedAnnealing(const Problem& p) {
     return best;
 }
 
-Solution simulatedAnnealing2ElectricBoogaloo(const Problem& p) {
+Solution simulatedAnnealing2ElectricBoogaloo(const Problem& p, std::default_random_engine& ran) {
     constexpr int MAX_SEARCH = 10000;
-    // Random engine, seeded by current time.
-    static std::default_random_engine ran{static_cast<unsigned int>(std::time(nullptr))};
     // Available operators
     const std::vector operators{
         op::fesins,
@@ -260,13 +258,18 @@ void operator+=(std::pair<T,U> & l,const std::pair<T,U> & r) {
 }
 
 Solution adaptiveSearch(const Problem& p) {
+    // Random engine, seeded by current time.
+    static std::default_random_engine engine{static_cast<unsigned int>(std::time(nullptr))};
+
+    return adaptiveSearch(p, engine);
+}
+
+Solution adaptiveSearch(const Problem& p, std::default_random_engine& ran) {
     constexpr unsigned int MAX_SEARCH = 10000;
     constexpr unsigned int SEGMENT_SIZE = 100;
     constexpr unsigned int ESCAPE_CONDITION = 1000;
     constexpr float MIN_WEIGHT = 0.05f;
     constexpr float REPLACE_WEIGHT_RATIO = 0.5f;
-    // Random engine, seeded by current time.
-    static std::default_random_engine ran{static_cast<unsigned int>(std::time(nullptr))};
 
     const auto fesins = [&](Solution s){ return op::fesins(p, s); };
     // Available operators (heuristics)
