@@ -1,6 +1,7 @@
 #include "window.h"
 #include <GLFW/glfw3.h>
 #include <stdexcept>
+#include <glm/glm.hpp>
 
 Window::Window() {
     if (!glfwInit())
@@ -28,6 +29,7 @@ void Window::loop() {
 void Window::render() {
     glClear(GL_COLOR_BUFFER_BIT);
 
+    glm::vec3 a{1.f, 2.f, 3.f};
 
     glfwSwapBuffers(mWindow);
     glfwPollEvents();

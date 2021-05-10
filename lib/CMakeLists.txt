@@ -8,4 +8,7 @@ if (GPU_ACCELERATION)
     if (WIN32)
         target_link_libraries(pickup_and_delivery PRIVATE opengl32.lib)
     endif()
+
+    # GLM:
+    target_include_directories(pickup_and_delivery PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/glm)
 endif()
