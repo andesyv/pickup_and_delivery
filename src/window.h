@@ -1,15 +1,24 @@
+#pragma once
+
 struct GLFWwindow;
 
 class Window {
-public:
+    friend int main();
+private:
     Window();
 
-    static Window& get();
-    void loop();
-    void render();
+public:
+    Window(const Window&) = delete;
 
-    ~Window();
+    void operator=(const Window&) = delete;
+
+    static Window& get();
+    void init();
+    void render();
+    void loop();
 
 private:
     GLFWwindow* mWindow;
+
+    ~Window();
 };

@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.13)
 project(pickup_and_delivery)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/lib)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -44,4 +45,7 @@ if (GPU_ACCELERATION)
 
     # Add library subdirectory cmakelists.txt:
     add_subdirectory(lib)
+
+    # Add a define to the c++ code:
+    add_compile_definitions(GPU_ACCELERATION)
 endif()

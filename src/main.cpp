@@ -250,9 +250,11 @@ int main(int argc, char *argv[])
 
 #include <iostream>
 #include "window.h"
+#include <GLFW/glfw3.h>
+#include <memory>
 
 int main() {
-    auto window = Window::get();
+    auto& window = Window::get();
     window.loop();
 
     return 0;
