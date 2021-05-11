@@ -4,6 +4,9 @@
 #include <stdexcept>
 #include <glm/glm.hpp>
 #include <iostream>
+#include "shader.h"
+
+static const char COMPUTE_CS[] = {R"MSTR(@compute-cs.glsl@)MSTR"};
 
 Window::Window() {
     static auto errCallback = [](int errnum, const char * errmsg){
@@ -19,6 +22,9 @@ Window::Window() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 	// glfwWindowHint(GLFW_DOUBLEBUFFER, true);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifndef NDEBUG
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+#endif
 
     mWindow = glfwCreateWindow(640, 480, "Hello Meta-Heuristics!", nullptr, nullptr);
     if (!mWindow) {
@@ -27,6 +33,9 @@ Window::Window() {
     }
 
     glfwMakeContextCurrent(mWindow);
+
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+        throw std::runtime_error{"Failed to initialize GLAD"};
 
     init();
 }
@@ -37,7 +46,30 @@ Window& Window::get() {
 }
 
 void Window::init() {
+#ifndef NDEBUG
+    // OpenGL Debugger callback:
+    static auto debugMessageCallback = [](
+            GLenum source,
+            GLenum type,
+            GLuint id,
+            GLenum severity,
+            GLsizei length,
+            const GLchar *message,
+            const void *userParam) {
+        std::cout << "GL DEBUG: " << message << std::endl;;
+    };
+    glDebugMessageCallback(debugMessageCallback, nullptr);
+#endif
+
     glClearColor(0.3f, 0.5f, 0.3f, 0.f);
+
+    // Init shaders:
+    // mShaders.emplace("compute", std::move(Shader{{
+    //     {GL_COMPUTE_SHADER, "./src/compute-cs.glsl"}
+    // }}));
+    mShaders.emplace("compute", std::move(Shader{{
+        {GL_COMPUTE_SHADER, COMPUTE_CS}
+    }}));
 }
 
 void Window::render() {
@@ -54,7 +86,13 @@ void Window::loop() {
         render();
 }
 
+Shader& Window::shader(std::string&& name) {
+    assert(mShaders.contains("name"));
+    return mShaders.at(name);
+}
+
 Window::~Window() {
+    mShaders.clear();
     glfwDestroyWindow(mWindow);
     glfwTerminate();
 }

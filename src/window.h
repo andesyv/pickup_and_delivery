@@ -1,6 +1,10 @@
 #pragma once
 
+#include <string>
+#include <map>
+
 struct GLFWwindow;
+class Shader;
 
 class Window {
     friend int main();
@@ -17,8 +21,11 @@ public:
     void render();
     void loop();
 
+    Shader& shader(std::string&& name);
+
 private:
     GLFWwindow* mWindow;
+    std::map<std::string, Shader> mShaders;
 
     ~Window();
 };
