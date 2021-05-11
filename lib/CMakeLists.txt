@@ -1,4 +1,8 @@
 if (GPU_ACCELERATION)
+    # GLAD
+    target_include_directories(pickup_and_delivery PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/glad/include)
+    target_sources(pickup_and_delivery PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/glad/src/glad.c)
+
     # GLFW:
     set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Build the GLFW example programs")
     set(GLFW_BUILD_TESTS OFF CACHE BOOL "Build the GLFW test programs")
