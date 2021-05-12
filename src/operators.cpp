@@ -31,6 +31,24 @@ auto find_nested_minmax(const T& begin, const T& end){
     return begin == end ? std::pair<vT, vT>{} : vals;
 }
 
+template <>
+auto find_nested_minmax<typename SolutionCached::iterator>(const typename SolutionCached::iterator& begin, const typename SolutionCached::iterator& end){
+    using itT = typename SolutionCached::value_type;
+    std::pair vals{
+        std::numeric_limits<int>::max(),
+        std::numeric_limits<int>::min()
+    };
+    for (auto it{begin}; it != end; ++it) {
+        for (const auto& l = it->calls; const auto& v : l) {
+            if (v < vals.first)
+                vals.first = v;
+            if (vals.second < v)
+                vals.second = v;
+        }
+    }
+    return begin == end ? std::pair<int, int>{} : vals;
+}
+
 // minmax for compact solution representation
 template <typename T>
 auto find_minmax(const T& begin, const T& end) {
@@ -56,6 +74,10 @@ static std::default_random_engine ran{static_cast<unsigned int>(std::time(nullpt
 namespace op {
 // 2-exchange operator
 Solution ex2(Solution s) {
+    return ex2(s, ran);
+}
+
+Solution ex2(Solution s, std::default_random_engine& ran) {
     const auto [min, max] = find_nested_minmax(s.begin(), s.end());
     if (max - min < 2)
         return s;
@@ -86,6 +108,59 @@ Solution ex2(Solution s) {
                     bpos.first = &(*it);
                 else
                     bpos.second = &(*it);
+        }
+    }
+
+#ifdef _DEBUG
+    // Early termination in case we somehow ended up with nullptr's
+    for (const auto& [a, b] : {apos, bpos})
+        if (!a || !b)
+            throw std::runtime_error{"Attempting to swap nullptr"};
+#endif
+
+    // Swap first:
+    std::swap(*apos.first, *bpos.first);
+    // Swap last:
+    std::swap(*apos.second, *bpos.second);
+
+    return s;
+}
+
+SolutionCached ex2(SolutionCached s, std::default_random_engine& ran) {
+    const auto [min, max] = find_nested_minmax(s.begin(), s.end());
+    if (max - min < 2)
+        return s;
+
+    // Find two random call ids
+    const auto r = [&](){ return ran() % (max + 1 - min) + min; };
+    auto a{r()}, b{r()};
+    // Loop until you have two different ones:
+    // Note: If really unlucky might loop for a long time
+    while (a == b)
+        b = r();
+
+    // It should be guaranteed that the random calls are represented in the solution (else it would be invalid)
+    std::pair<int*, int*>   apos{std::make_pair(nullptr, nullptr)},
+                            bpos{std::make_pair(nullptr, nullptr)};
+    for (auto& l : s) {
+        for (auto it{l.calls.begin()}; it != l.calls.end(); ++it) {
+            const auto& v = *it;
+
+            if (v == a) {
+                if (!apos.first)
+                    apos.first = &(*it);
+                else
+                    apos.second = &(*it);
+                l.bChanged = true;
+            }
+
+            if (v == b) {
+                if (!bpos.first)
+                    bpos.first = &(*it);
+                else
+                    bpos.second = &(*it);
+                l.bChanged = true;
+            }
         }
     }
 
@@ -204,6 +279,10 @@ bool exchance(std::vector<int>& c1, std::vector<int>& c2) {
 
 // 3-exchange operator
 Solution ex3(Solution s) {
+    return ex3(s, ran);
+}
+
+Solution ex3(Solution s, std::default_random_engine& ran) {
     const auto [min, max] = find_nested_minmax(s.begin(), s.end());
     if (max - min < 3)
         return s;
@@ -324,7 +403,11 @@ SolutionComp ex3_comp(SolutionComp s) {
 }
 
 // 1-reinsert operator
-Solution ins1(Solution s, const std::default_random_engine& engine) {
+Solution ins1(Solution s) {
+    return ins1(s, ran);
+}
+
+Solution ins1(Solution s, std::default_random_engine& ran) {
     const auto [min, max] = find_nested_minmax(s.begin(), s.end());
     if (min == max)
         return s;
@@ -351,8 +434,35 @@ Solution ins1(Solution s, const std::default_random_engine& engine) {
     return s;
 }
 
-Solution ins1(Solution s) {
-    return ins1(s, ran);
+SolutionCached ins1(SolutionCached s, std::default_random_engine& ran) {
+    const auto [min, max] = find_nested_minmax(s.begin(), s.end());
+    if (min == max)
+        return s;
+
+    // Find a random call id
+    const auto a = ran() % (max + 1 - min) + min;
+
+    // Remove from list:
+    for (auto& l : s)
+        if (0 < std::erase(l.calls, a))
+            l.bChanged = true;
+    
+    // Insert two of call id into random car:
+    const auto ranIndex = ran() % s.size();
+    auto& car = s[ranIndex].calls;
+    // Optional hint to compiler to add more make next two inserts cheaper
+    car.reserve(car.size() + 2);
+    if (car.empty())
+        car.push_back(a);
+    else
+        car.insert(car.begin() + ran() % car.size(), a);
+
+    // No reason to check second time because size will atleast be 1
+    car.insert(car.begin() + ran() % car.size(), a);
+
+    s[ranIndex].bChanged = true;
+
+    return s;
 }
 
 SolutionComp ins1_comp(SolutionComp s) {
@@ -495,6 +605,73 @@ Solution fesins(const Problem& p, Solution s) {
     return s;
 }
 
+SolutionCached fesins(const Problem& p, SolutionCached s, std::default_random_engine& ran) {
+    const auto [min, max] = find_nested_minmax(s.begin(), s.end());
+    if (min == max)
+        return s;
+
+    // Find a random call id
+    const auto a = ran() % (max + 1 - min) + min;
+
+    // Remove from list:
+    for (auto& l : s)
+        if (0 < std::erase(l.calls, a))
+            l.bChanged = true;
+    
+    // Find possible cars:
+    std::vector<unsigned int> carIds;
+    carIds.reserve(s.size());
+    for (auto i{0}; i < p.vehicles.size(); ++i) {
+        // If vehicle has call, add it to list.
+        const auto& ac = p.vehicles[i].availableCalls;
+        if (std::find(ac.begin(), ac.end(), a) != ac.end())
+            carIds.push_back(i);
+    }
+    // Also add dummy
+    carIds.push_back(static_cast<unsigned int>(p.vehicles.size()));
+
+    // Find the one with least momentary weight ratio (filter out ones that already have too much weight):
+    // Weight ratio is calculated as max(currentWeight_0, currentWeight_1, ..., currentWeight_n) / maxWeight
+    auto leastWeightRatio{std::make_pair(std::numeric_limits<double>::max(), carIds.size() - 1)};
+    for (unsigned int i{0}; i < carIds.size() - 1; ++i) {
+        const auto maxCapacity = p.vehicles[i].capacity;
+        int capacity{0};
+        double ratio{0.0};
+        std::set<int> calls{};
+        for (const auto& route{s[i].calls}; const auto call : route) {
+            if (calls.insert(call).second) {
+                capacity += p.calls[call].size;
+                // Early exit if already above max capacity
+                if (maxCapacity < capacity) {
+                    ratio = 2.0;
+                    break;
+                }
+                ratio = std::max(ratio, static_cast<double>(capacity) / maxCapacity);
+            } else
+                capacity -= p.calls[call].size;
+        }
+
+        if (ratio < leastWeightRatio.first && ratio < 1.0)
+            leastWeightRatio = {ratio, i};
+    }
+
+    // Insert two of call id into random car:
+    auto& car = s[carIds[leastWeightRatio.second]].calls;
+    // Optional hint to compiler to add more make next two inserts cheaper
+    car.reserve(car.size() + 2);
+    if (car.empty())
+        car.push_back(a);
+    else
+        car.insert(car.begin() + ran() % car.size(), a);
+
+    // No reason to check second time because size will atleast be 1
+    car.insert(car.begin() + ran() % car.size(), a);
+
+    s[carIds[leastWeightRatio.second]].bChanged = true;
+
+    return s;
+}
+
 Solution freorder(const Problem& p, Solution s) {
     // Find cars we can operate on
     std::vector<uint16_t> applicableCars;
@@ -565,6 +742,82 @@ Solution freorder(const Problem& p, Solution s) {
     // Asign the new configuration to the solution
     for (auto j{0}; j < 4; ++j)
         *poss.at(j) = conf->at(j);
+
+    return s;
+}
+
+SolutionCached freorder(const Problem& p, SolutionCached s) {
+    // Find cars we can operate on
+    std::vector<uint16_t> applicableCars;
+    applicableCars.reserve(s.size()-1);
+    for (auto i{0}; i < s.size()-1; ++i)
+        if (4 <= s[i].calls.size())
+            applicableCars.push_back(i);
+    
+    // Early exit if we can't do any operations
+    if (applicableCars.empty())
+        return s;
+
+    const auto carIndex = applicableCars.at(ran() % applicableCars.size());
+    auto& car = s.at(carIndex).calls;
+    // Choose two random calls from car:
+    int a{car.at(ran() % car.size())},b{a};
+    while (b == a)
+        b = car.at(ran() % car.size());
+
+    // Each possible configuration for sets:
+    const std::array<std::array<int, 4>, 6> configurations{
+        std::to_array({a, b, a, b}),
+        std::to_array({a, a, b, b}),
+        std::to_array({a, b, b, a}),
+        std::to_array({b, a, b, a}),
+        std::to_array({b, b, a, a}),
+        std::to_array({b, a, a, b}),
+    };
+
+    // Check for each possible configuration if we find any that fits the time schedule:
+    const auto conf = [&]() -> std::optional<std::array<int, 4>> {
+        for (const auto& conf : configurations) {
+            bool bPossible{true};
+            std::set<int> calls;
+            auto time{p.vehicles.at(carIndex).startingTime};
+
+            for (const auto& callId : conf) {
+                const auto& call = p.calls.at(callId);
+                const bool bInserted = calls.insert(callId).second;
+                if ((bInserted ? call.upperTimewindowPickup : call.upperTimewindowDelivery) < time) {
+                    bPossible = false;
+                    break;
+                }
+                time = std::max(bInserted ? call.lowerTimewindowPickup : call.lowerTimewindowDelivery, time);
+            }
+
+            if (bPossible)
+                return conf;
+        }
+
+        return std::nullopt;
+    }();
+
+    // Exit if no configurations worked
+    if (!conf)
+        return s;
+    
+    // If we found a working configuration, swap according to that one:
+    std::array poss{car.end(), car.end(), car.end(), car.end()};
+    unsigned int i{0};
+    for (auto it{car.begin()}; it != car.end() && i < poss.size(); ++it) {
+        if (*it == a || *it == b) {
+            poss[i] = it;
+            ++i;
+        }
+    }
+
+    // Asign the new configuration to the solution
+    for (auto j{0}; j < 4; ++j)
+        *poss.at(j) = conf->at(j);
+
+    s.at(carIndex).bChanged = true;
 
     return s;
 }

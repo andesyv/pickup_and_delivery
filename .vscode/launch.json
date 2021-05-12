@@ -20,6 +20,7 @@
                     "value": "$PATH:${command:cmake.launchTargetDirectory}"
                 },
             ],
+            "console": "internalConsole",
             "internalConsoleOptions": "openOnSessionStart"
         }
     ]

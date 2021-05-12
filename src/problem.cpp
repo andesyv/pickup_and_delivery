@@ -140,6 +140,15 @@ Solution toNestedList(const SolutionComp& s) {
     return out;
 }
 
+SolutionCached toCachedSolution(const Solution& s) {
+    SolutionCached out;
+    out.reserve(s.size());
+    std::transform(s.begin(), s.end(), std::back_inserter(out), [](const auto& l){
+        return VehicleSolution{ .calls = l };
+    });
+    return out;
+}
+
 std::vector<int> fromNestedList(const Solution& list) {
     std::vector<int> out;
     out.reserve(
@@ -149,6 +158,23 @@ std::vector<int> fromNestedList(const Solution& list) {
     );
     for (std::size_t i{0}; i < list.size(); ++i) {
         auto inner = list.at(i);
+        for (const auto& v : inner)
+            out.push_back(v+1);
+        if (i < list.size() - 1)
+            out.push_back(0);
+    }
+    return out;
+}
+
+std::vector<int> fromNestedList(const SolutionCached& list) {
+    std::vector<int> out;
+    out.reserve(
+        std::accumulate(list.begin(), list.end(), std::size_t{0}, [](const auto& a, const auto& b){
+            return a + b.calls.size() + 1;
+        })
+    );
+    for (std::size_t i{0}; i < list.size(); ++i) {
+        auto inner = list.at(i).calls;
         for (const auto& v : inner)
             out.push_back(v+1);
         if (i < list.size() - 1)

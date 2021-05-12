@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <limits>
 #include <map>
+#include <optional>
 
 // Maybe monad / neither implementation based on https://github.com/LoopPerfect/neither and std::optional
 template <typename T, typename E = std::exception>
@@ -74,13 +75,30 @@ struct Problem {
     std::map<std::pair<index_t, index_t>, VehicleCall> vehicleCalls; // vehicle index, call index
 };
 
-typedef std::vector<std::vector<int>> Solution;
+using Solution = std::vector<std::vector<int>>;
+struct VehicleSolution {
+    std::vector<int> calls;
+    std::optional<int> cost{std::nullopt};
+    bool bChanged{true};
+
+    /**
+     * @brief Whether the solution is declared infeasible.
+     * If the solution was not changed, but it still doesn't
+     * have a cost, it's infeasible.
+     * 
+     * @return true == infeasible, false == uncertain
+     */
+    bool infeasible() const { return !bChanged && !cost; }
+    bool feasible() const { return !bChanged && cost; }
+};
+using SolutionCached = std::vector<VehicleSolution>;
+
 /** Compact memory layout solution representation
  * Since it's a one dimensional vector the memory representation
  * is more or less guaranteed to be sequential, meaning that
  * it better preserves cache locality.
  */
-typedef std::vector<int> SolutionComp;
+using SolutionComp = std::vector<int>;
 
 std::vector<std::string_view> split(const std::string_view& str, char c);
 
@@ -115,8 +133,10 @@ Solution toNestedList(const int (&a)[I]) {
 }
 
 Solution toNestedList(const SolutionComp& s);
+SolutionCached toCachedSolution(const Solution& s);
 
 std::vector<int> fromNestedList(const Solution& list);
+std::vector<int> fromNestedList(const SolutionCached& list);
 SolutionComp fromNestedListZeroIndexed(const Solution& list);
 
 // https://stackoverflow.com/questions/60151514/using-stdvector-as-view-on-to-raw-memory

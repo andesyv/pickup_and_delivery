@@ -20,6 +20,7 @@
 
 int main(int argc, char *argv[])
 {
+    const auto program_start = std::chrono::high_resolution_clock::now();
     std::cout << "Hello world!" << std::endl;
 
 #ifdef FILE_OUTPUT
@@ -76,7 +77,7 @@ int main(int argc, char *argv[])
 #ifdef ALL_ALGORITHMS
 #pragma message("Building with all search algorithms")
 
-        const std::vector<std::pair<HeuristicParallellSignature, std::string>> searchAlgorithms{
+        const std::vector<std::pair<HeuristicParallelSignature, std::string>> searchAlgorithms{
             {blindRandomSearch, "Random Search"},
             {localSearch, "Local Search"},
             {simulatedAnnealing, "Simulated Annealing (old)"},
@@ -91,13 +92,13 @@ int main(int argc, char *argv[])
 #endif
 
 #else
-            const auto& [search, algname] = std::make_pair<HeuristicParallellSignature, std::string>(&adaptiveSearch, "Adaptive Search");
+            const auto& [search, algname] = std::make_pair<HeuristicParallelSignatureCached, std::string>(&adaptiveCachedSearch, "Adaptive Cached Search");
 #endif
 
             long long totalTime{0};
             long long totalCost{0};
             int bestCost{std::numeric_limits<int>::max()};
-            std::vector<std::vector<int>> bestSolution{};
+            SolutionCached bestSolution{};
 
             constexpr unsigned int THREAD_COUNT = 10;
 
@@ -111,7 +112,7 @@ int main(int argc, char *argv[])
 
             const auto loop = [&](std::promise<int> &&p, std::default_random_engine&& ran) {
                 std::chrono::steady_clock::time_point t1{std::chrono::steady_clock::now()};
-                const auto solution = search(problem, ran);
+                auto solution = search(problem, ran);
                 auto duration = std::chrono::steady_clock::now() - t1;
 
                 // Scope so mutex lock can do it's thing.
@@ -127,13 +128,15 @@ int main(int argc, char *argv[])
                     }
                     std::cout << std::endl;
 #endif
-                    auto cResult = getCost(problem, solution);
+                    auto cResult = getFeasibleCost(problem, solution);
+#ifndef NDEBUG
                     if (!cResult)
                     {
                         std::cout << cResult.err().what() << std::endl;
                         p.set_value(1);
                         return;
                     }
+#endif
                     const auto cost = cResult.val();
                     if (cost < bestCost)
                     {
@@ -202,7 +205,7 @@ int main(int argc, char *argv[])
 
             auto improvementPercent = [&]() {
                 auto initCost = getCost(problem, genInitialSolution(problem));
-                auto bestCost = getCost(problem, bestSolution);
+                auto bestCost = getFeasibleCost(problem, bestSolution);
 
                 return (initCost && bestCost) ? 100.0 * (initCost.val() - bestCost.val()) / initCost.val() : 0.0;
             };
@@ -242,6 +245,8 @@ int main(int argc, char *argv[])
 #endif
 
     }
+
+    std::cout << "Program execution time: " << std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - program_start).count() << " seconds." << std::endl;
 
     return 0;
 }

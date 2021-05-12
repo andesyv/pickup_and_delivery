@@ -11,16 +11,20 @@ namespace op {
 /// Legacy operators:
 // 2-exchange operator
 Solution ex2(Solution s);
+Solution ex2(Solution s, std::default_random_engine& engine);
+SolutionCached ex2(SolutionCached s, std::default_random_engine& engine);
 SolutionComp ex2_comp(SolutionComp s);
 bool exchance(std::vector<int>& c1, std::vector<int>& c2);
 
 // 3-exchange operator
 Solution ex3(Solution s);
+Solution ex3(Solution s, std::default_random_engine& engine);
 SolutionComp ex3_comp(SolutionComp s);
 
 // 1-reinsert operator
 Solution ins1(Solution s);
-Solution ins1(Solution s, const std::default_random_engine& engine);
+Solution ins1(Solution s, std::default_random_engine& engine);
+SolutionCached ins1(SolutionCached s, std::default_random_engine& engine);
 SolutionComp ins1_comp(SolutionComp s);
 
 
@@ -32,6 +36,7 @@ SolutionComp ins1_comp(SolutionComp s);
  * @return New (maybe) feasible solution
  */
 Solution fesins(const Problem& p, Solution s);
+SolutionCached fesins(const Problem& p, SolutionCached s, std::default_random_engine& engine);
 
 /**
  * @brief time-window reorder
@@ -41,6 +46,7 @@ Solution fesins(const Problem& p, Solution s);
  * @return Solution 
  */
 Solution freorder(const Problem& p, Solution s);
+SolutionCached freorder(const Problem& p, SolutionCached s);
 
 /**
  * @brief Multi-threading shuffle
