@@ -1,9 +1,22 @@
 #version 430
 
-#define PATHLENGTH 4
-#define NODECOUNT 3
-
 layout(local_size_x = 1, local_size_y = 1) in; // local_size = optional
+
+#define MAX_CALLS 4
+#define MAX_VEHICLES 4
+#define PHEREMONE_WEIGHT 0.5
+
+struct VehicleGroup
+{
+    uint calls[MAX_CALLS];
+    uint call_count;
+    uvec2 start_index;
+};
+
+layout(std430, binding = 0) buffer vehicleBUffer
+{
+	VehicleGroup vehicles[MAX_VEHICLES];
+};
 
 // Two adjacancy tables: Pickup and delivery tables.
 /** There must be different cost for first time you visit a node (pickup)
@@ -14,69 +27,99 @@ layout(local_size_x = 1, local_size_y = 1) in; // local_size = optional
  * edges is (2 * NODECOUNT) x NODECOUNT.
  * ex: (a, b, c, a', b', c') x (a, b, c)
  */
-layout(rgba32f, binding = 0) uniform image2D edges;
+layout(r32u, binding = 0) uniform image2D edges_in;
+layout(r32u, binding = 1) uniform image2D edges_out;
 
-// 2d/3d texture of integer pixel positions equaling ant start pixel-index.
-layout(rg16i, binding = 2) uniform image2D start_node;
+float ran(vec2 st) {
+    return fract(sin(dot(st.xy,
+                         vec2(12.9898,78.233)))*
+        43758.5453123);
+}
+
+bool inList(in uint path[MAX_CALLS * 2], uint path_length, call) {
+    for (int i = 0; i < path_length; i++)
+        if (path[i] == call)
+            return true;
+    
+    return false;
+}
 
 void main() {
-    ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
+    const uint vehiclce_id = gl_WorkGroupID.x;
 
-    uint path[PATHLENGTH];
+    // We don't need this thread, we can just discard it. (won't save anything, but oh whale)
+    if (vehicles[vehicle_id].call_count <= gl_LocalInvocationID.x)
+        discard;
+
+    // ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
+
+    const uint NODECOUNT = vehicles[vehicle_id].call_count;
+    const uint PATHLENGTH = NODECOUNT * 2;
+
+    uint path[MAX_CALLS * 2];
 
     // Start node:
-    uint current = imageLoad(start, pixel_coords);
+    // uint current = imageLoad(start, pixel_coords);
+    // Start local work group in x axis on different calls
+    uint current_index = gl_LocalInvocationID.x; // vehicles[vehicle_id].calls[gl_LocalInvocationID.x];
     // Destination
-    uint dest;
+    uint dest_index;
     
     // For each pathway (node), find the new path to take semi-randomly 
     // Don't take the way you just came from.
-    for (int i = 0; i < PATHLENGTH - 1; i++) {
+    for (uint i = 0; i < PATHLENGTH - 1; i++) {
         // 1. Choose a weighted random node based on edges table:
         // 1.1 Find sum:
         // Idea: Save sum of row in last column to save time computing it. +1 column
+        uvec2 tex_coords[NODECOUNT];
         float sum_weights = 0.0;
-        for (int j = 0; j < NODECOUNT; j++) {
-            if (current == j)
+        for (uint j = 0; j < NODECOUNT; j++) {
+            if (current_index == j)
                 continue;
-            
-            float dir_weight = 0.0;
 
             // If second time visiting node, choose lower index
             // This way we have different costs for delivering and pickup of nodes:
-            if (inList(path, current))
-                dir_weight = edges[NODECOUNT + current, j];
+            if (inList(path, PATHLENGTH, current_index))
+                tex_coords[j] = start_index + uvec2(j + NODECOUNT, current_index);
             else
-                dir_weight = edges[current, j];
-            sum_weights += mix(1.0, dir_weight, PHEREMONE_WEIGHT); // PHEREMONE_WEIGHT = how much pheremones weight into random node
+                tex_coords[j] = start_index + uvec2(j, current_index);
+
+            int dir_weight = imageLoad(edges_in, tex_coords[j]);
+            sum_weights += mix(1, dir_weight, PHEREMONE_WEIGHT); // PHEREMONE_WEIGHT = how much pheremones weight into random node
         }
 
         // 1.2 Random:
-        float r = rand(); // Random value between 0 and 1
+        const float r = rand(vec2(gl_LocalInvocationID.xy + gl_GlobalInvocationID.xy) + vec2(2 * i, 3 * i)); // Random value between 0 and 1
         float weight = 0.0;
 
         // 1.3 Increment sum and find index:
-        for (int j = 0; j < NODECOUNT; j++) {
-            for (current == j)
+        for (uint j = 0; j < NODECOUNT; j++) {
+            for (current_index == j)
                 continue;
 
-            weight += mix(1.0, edges[current, j], PHEREMONE_WEIGHT);
+            // uvec2 tex_coords;
+            // if (inList(path, PATHLENGTH, current_index))
+            //     tex_coords = start_index + uvec2(j + NODECOUNT, current_index);
+            // else
+            //     tex_coords = start_index + uvec2(j, current_index);
+
+            weight += mix(1, imageLoad(edges_in, tex_coords[j]), PHEREMONE_WEIGHT);
 
             // Deterministically find destination node index
             if (r < weight / sum_weights) {
-                dest = j;
+                dest_index = j;
                 break;
             }
         }
 
         // 2. Add node to path:
-        path[i] = current;
+        path[i] = current_index;
         // Update current:
-        current = dest;
+        current_index = dest_index;
     }
 
     // Add end node to path:
-    path[PATHLENGTH - 1] = dest;
+    path[PATHLENGTH - 1] = dest_index;
 
 
     // 3. Find cost of path:
@@ -84,16 +127,20 @@ void main() {
 
     // 4. Distribute new pheremone based on cost:
     float pheremone = getPheremone(cost);
-    bool visited[NODECOUNT] = 0;
-    for (int i = 0; i < PATHLENGTH - 1; ++i) {
-        if (!visited[path[i]])
-            edges[path[i], path[i+1]] += pheremone;
-        else
-            edges[NODECOUNT + path[i], path[i+1]] += pheremone;
+    bool visited[NODECOUNT];
+    for (int i = 0; i < NODECOUNT; i++)
+        visited[i] = false;
+    
+    for (uint i = 0; i < PATHLENGTH - 1; ++i) {
+        uvec2 tex_coord;
+        if (!visited[path[i]]) {
+            tex_coord = start_index + uvec2(path[i], path[i+1]);
+            visited[path[i]] = true;
+        } else {
+            tex_coord = start_index + uvec2(NODECOUNT + path[i], path[i+1]);
+        }
+        // Need to atomically write to output to make sure all invocations gets to add their values:
+        imageAtomicAdd(edges_out, tex_coord, pheremone);
     }
-
-
-
-    // imageStore(img_output, pixel_coords, vec4(vec2(pixel_coords) / 100.0, 0., 1.0));
 }
 
