@@ -84,8 +84,8 @@ void main() {
             else
                 tex_coords[j] = start_index + uvec2(j, current_index);
 
-            int dir_weight = imageLoad(edges_in, tex_coords[j]);
-            sum_weights += mix(1, dir_weight, PHEREMONE_WEIGHT); // PHEREMONE_WEIGHT = how much pheremones weight into random node
+            float dir_weight = float(imageLoad(edges_in, tex_coords[j]));
+            sum_weights += mix(1.0, dir_weight, PHEREMONE_WEIGHT); // PHEREMONE_WEIGHT = how much pheremones weight into random node
         }
 
         // 1.2 Random:
@@ -103,7 +103,7 @@ void main() {
             // else
             //     tex_coords = start_index + uvec2(j, current_index);
 
-            weight += mix(1, imageLoad(edges_in, tex_coords[j]), PHEREMONE_WEIGHT);
+            weight += float(mix(1.0, imageLoad(edges_in, tex_coords[j]), PHEREMONE_WEIGHT));
 
             // Deterministically find destination node index
             if (r < weight / sum_weights) {
