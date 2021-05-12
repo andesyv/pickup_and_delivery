@@ -19,13 +19,22 @@ public:
     static Window& get();
     void init();
     void render();
+    template <typename F>
+    void render(F&& func) {
+        func();
+        renderFuncFinish();
+    }
     void loop();
+
+    bool shouldClose() const;
 
     Shader& shader(std::string&& name);
 
 private:
     GLFWwindow* mWindow;
     std::map<std::string, Shader> mShaders;
+
+    void renderFuncFinish();
 
     ~Window();
 };

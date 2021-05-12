@@ -250,12 +250,18 @@ int main(int argc, char *argv[])
 
 #include <iostream>
 #include "window.h"
-#include <GLFW/glfw3.h>
+#include <glad/glad.h>
 #include <memory>
 
 int main() {
     auto& window = Window::get();
-    window.loop();
+    // window.loop();
+    glClearColor(0.2f, 0.1f, 0.5f, 0.0f);
+    while (!window.shouldClose()) {
+        window.render([](){
+            glClear(GL_COLOR_BUFFER_BIT);
+        });
+    }
 
     return 0;
 }

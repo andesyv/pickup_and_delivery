@@ -86,9 +86,18 @@ void Window::loop() {
         render();
 }
 
+bool Window::shouldClose() const {
+    return glfwWindowShouldClose(mWindow);  
+}
+
 Shader& Window::shader(std::string&& name) {
     assert(mShaders.contains("name"));
     return mShaders.at(name);
+}
+
+void Window::renderFuncFinish() {
+    glfwSwapBuffers(mWindow);
+    glfwPollEvents();
 }
 
 Window::~Window() {
