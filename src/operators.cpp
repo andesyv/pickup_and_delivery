@@ -342,6 +342,72 @@ Solution ex3(Solution s, std::default_random_engine& ran) {
     return s;
 }
 
+SolutionCached ex3(SolutionCached s, std::default_random_engine& ran) {
+    const auto [min, max] = find_nested_minmax(s.begin(), s.end());
+    if (max - min < 3)
+        return s;
+
+    // Find three random call ids
+    const auto r = [&](){ return ran() % (max + 1 - min) + min; };
+    auto a{r()}, b{r()}, c{r()};
+    // Loop until you have three different ones:
+    // Note: If really unlucky might loop for a long time
+    while (a == b)
+        b = r();
+    while (a == c || b == c)
+        c = r();
+
+    // It should be guaranteed that the random calls are represented in the solution (else it would be invalid)
+    std::pair<int*, int*>   apos{std::make_pair(nullptr, nullptr)},
+                            bpos{std::make_pair(nullptr, nullptr)},
+                            cpos{std::make_pair(nullptr, nullptr)};
+    for (auto& l : s) {
+        for (auto it{l.calls.begin()}; it != l.calls.end(); ++it) {
+            const auto& v = *it;
+
+            if (v == a) {
+                if (!apos.first)
+                    apos.first = &(*it);
+                else
+                    apos.second = &(*it);
+                l.bChanged = true;
+            }
+
+            if (v == b) {
+                if (!bpos.first)
+                    bpos.first = &(*it);
+                else
+                    bpos.second = &(*it);
+                l.bChanged = true;
+            }
+
+            if (v == c) {
+                if (!cpos.first)
+                    cpos.first = &(*it);
+                else
+                    cpos.second = &(*it);
+                l.bChanged = true;
+            }
+        }
+    }
+
+#ifdef _DEBUG
+    // Early termination in case we somehow ended up with nullptr's
+    for (const auto& [a, b] : {apos, bpos, cpos})
+        if (!a || !b)
+            throw std::runtime_error{"Attempting to swap nullptr"};
+#endif
+
+    // Swap first:
+    std::swap(*apos.first, *bpos.first);
+    std::swap(*bpos.first, *cpos.first);
+    // Swap last:
+    std::swap(*apos.second, *bpos.second);
+    std::swap(*bpos.second, *cpos.second);
+
+    return s;
+}
+
 SolutionComp ex3_comp(SolutionComp s) {
     const auto [min, max] = find_minmax(s.begin(), s.end());
     if (max - min < 3)
@@ -447,8 +513,8 @@ SolutionCached ins1(SolutionCached s, std::default_random_engine& ran) {
         if (0 < std::erase(l.calls, a))
             l.bChanged = true;
     
-    // Insert two of call id into random car:
-    const auto ranIndex = ran() % s.size();
+    // Insert two of call id into random car: (exclude dummy)
+    const auto ranIndex = ran() % (s.size() - 1);
     auto& car = s[ranIndex].calls;
     // Optional hint to compiler to add more make next two inserts cheaper
     car.reserve(car.size() + 2);
@@ -672,6 +738,49 @@ SolutionCached fesins(const Problem& p, SolutionCached s, std::default_random_en
     return s;
 }
 
+SolutionCached validins(const Problem& p, SolutionCached s, std::default_random_engine& ran) {
+    const auto [min, max] = find_nested_minmax(s.begin(), s.end());
+    if (min == max)
+        return s;
+
+    // Find a random call id
+    const auto a = ran() % (max + 1 - min) + min;
+
+    // Remove from list:
+    for (auto& l : s)
+        if (0 < std::erase(l.calls, a))
+            l.bChanged = true;
+    
+    // Find possible cars:
+    std::vector<unsigned int> carIds;
+    carIds.reserve(s.size());
+    for (auto i{0}; i < p.vehicles.size(); ++i) {
+        // If vehicle has call, add it to list.
+        const auto& ac = p.vehicles[i].availableCalls;
+        if (std::find(ac.begin(), ac.end(), a) != ac.end())
+            carIds.push_back(i);
+    }
+    // Also add dummy
+    carIds.push_back(static_cast<unsigned int>(p.vehicles.size()));
+
+    // Insert two of call id into random car:
+    const auto carId = carIds[ran() % carIds.size()];
+    auto& car = s[carId].calls;
+    // Optional hint to compiler to add more make next two inserts cheaper
+    car.reserve(car.size() + 2);
+    if (car.empty())
+        car.push_back(a);
+    else
+        car.insert(car.begin() + ran() % car.size(), a);
+
+    // No reason to check second time because size will atleast be 1
+    car.insert(car.begin() + ran() % car.size(), a);
+
+    s[carId].bChanged = true;
+
+    return s;
+}
+
 Solution freorder(const Problem& p, Solution s) {
     // Find cars we can operate on
     std::vector<uint16_t> applicableCars;
@@ -746,7 +855,7 @@ Solution freorder(const Problem& p, Solution s) {
     return s;
 }
 
-SolutionCached freorder(const Problem& p, SolutionCached s) {
+SolutionCached freorder(const Problem& p, SolutionCached s, std::default_random_engine& ran) {
     // Find cars we can operate on
     std::vector<uint16_t> applicableCars;
     applicableCars.reserve(s.size()-1);
@@ -884,12 +993,12 @@ Solution backinsert(const Problem& p, Solution s) {
     auto& dummy = s.back();
     auto& car = s.at(ran() % (s.size() - 1));
 
-    // 40% chance to do 2-exchance instead of reinsert
-    if (ran() % 100 * 0.01 < EXCHANCE_CHANCE) {
-        // If we coudln't exchange, we can continue with the reinsert option instead.
-        if (exchance(car, dummy))
-            return s;
-    }
+    // // 40% chance to do 2-exchance instead of reinsert
+    // if (ran() % 100 * 0.01 < EXCHANCE_CHANCE) {
+    //     // If we coudln't exchange, we can continue with the reinsert option instead.
+    //     if (exchance(car, dummy))
+    //         return s;
+    // }
 
     if (car.empty())
         return s;
@@ -916,7 +1025,126 @@ Solution backinsert(const Problem& p, Solution s) {
     return s;
 }
 
+SolutionCached backinsert(const Problem& p, SolutionCached s, std::default_random_engine& ran) {
+    constexpr float EXCHANCE_CHANCE = 0.4f;
+
+    auto& dummy = s.back().calls;
+    const auto carIndex = ran() % (s.size() - 1);
+    auto& car = s.at(carIndex).calls;
+
+    // // 40% chance to do 2-exchance instead of reinsert
+    // if (ran() % 100 * 0.01 < EXCHANCE_CHANCE) {
+    //     // If we coudln't exchange, we can continue with the reinsert option instead.
+    //     if (exchance(car, dummy))
+    //         return s;
+    // }
+
+    if (car.empty())
+        return s;
+
+    const auto v = car.at(ran() % car.size());
+    
+    // Remove from car
+    car.erase(std::remove(car.begin(), car.end(), v), car.end());
+    s.at(carIndex).bChanged = true;
+
+    // Reinsert into dummy
+    dummy.reserve(dummy.size() + 2);
+    if (dummy.empty())
+        dummy.push_back(v);
+    else
+        dummy.insert(dummy.begin() + ran() % dummy.size(), v);
+    dummy.insert(dummy.begin() + ran() % dummy.size(), v);
+
+    s.back().bChanged = true;
+
+#ifndef NDEBUG
+    for (const auto& c : s)
+        if (c.calls.size() % 2)
+            throw std::runtime_error{"Invalid solution!"};
+#endif
+
+    return s;
+}
+
+SolutionCached multibackinsert(const Problem& p, SolutionCached s, std::default_random_engine& ran) {
+    const auto callsInDummy = s.back().calls.size() / 2;
+    const auto maxBackinserts = p.calls.size() - callsInDummy;
+    const auto insertCount = ran() % (maxBackinserts / 3);
+    for (auto i{0}; i < insertCount; ++i)
+        s = backinsert(p, s, ran);
+    return s;
+}
+
+SolutionCached priceinsert(const Problem& p, SolutionCached s, std::default_random_engine& ran) {
+    // Take one from dummy
+    auto& dummy = s.back();
+    const auto call = dummy.calls.at(ran() % dummy.calls.size());
+    
+    std::erase(dummy.calls, call);
+    dummy.bChanged = true;
+
+    // Find cheapest car to insert into:
+    auto cost = std::numeric_limits<int>::max();
+    std::vector<index_t> cheapestCars;
+    cheapestCars.reserve(p.vehicles.size());
+    
+    for (index_t i = 0; i < p.vehicles.size(); ++i) {
+        // Check if vehicle actually can take that call.
+        const auto& available = p.vehicles.at(i).availableCalls;
+        if (std::find(available.begin(), available.end(), call) == available.end())
+            continue;
+
+#ifndef NDEBUG
+        if (!p.vehicleCalls.contains({i, call}))
+            throw std::runtime_error{"Could not find vehicle call combo."};
+#endif
+        const auto& vehicleCall = p.vehicleCalls.at({i, call});
+        const auto vehicleCost = vehicleCall.originNodeCosts + vehicleCall.destNodeCosts;
+        if (vehicleCost < cost) {
+            cheapestCars = {i};
+            cost = vehicleCost;
+        } else if (vehicleCost == cost)
+            cheapestCars.push_back(i);
+    }
+
+    // No car can carry the call. Just place it back into the dummy then. :/
+    const bool bFeasibleCar = !cheapestCars.empty();
+
+    // Randomly insert into a possible car:
+    auto& car = bFeasibleCar ? s.at(cheapestCars.at(ran() % cheapestCars.size())) : dummy;
+    car.calls.reserve(car.calls.size() + 2);
+    if (car.calls.empty())
+        car.calls.push_back(call);
+    else
+        car.calls.insert(car.calls.begin() + ran() % car.calls.size(), call);
+
+    // No reason to check second time because size will atleast be 1
+    car.calls.insert(car.calls.begin() + ran() % car.calls.size(), call);
+
+    car.bChanged = true;
+    
+    return s;
+}
+
 Solution scramble(const Problem& p, Solution s) {
+    return s;
+}
+
+SolutionCached shuffle(SolutionCached s, std::default_random_engine& ran) {
+    // Filter out empty cars:
+    std::vector<index_t> nonEmptyCars;
+    nonEmptyCars.reserve(s.size());
+    for (index_t i{0}; i < s.size(); ++i)
+        if (!s.at(i).calls.empty())
+            nonEmptyCars.push_back(i);
+
+    // Shuffle non-empty car
+    const auto carId = nonEmptyCars.at(ran() % nonEmptyCars.size());
+    auto& car = s.at(carId).calls;
+    std::shuffle(car.begin(), car.end(), ran);
+    s.at(carId).bChanged = true;
+
     return s;
 }
 

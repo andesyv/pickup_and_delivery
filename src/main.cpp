@@ -40,10 +40,10 @@ int main(int argc, char *argv[])
 
     // Input files:
     std::vector files{
-        "./data/Call_7_Vehicle_3.txt",
-        "./data/Call_18_Vehicle_5.txt",
-        "./data/Call_035_Vehicle_07.txt",
-        "./data/Call_080_Vehicle_20.txt",
+        // "./data/Call_7_Vehicle_3.txt",
+        // "./data/Call_18_Vehicle_5.txt",
+        // "./data/Call_035_Vehicle_07.txt",
+        // "./data/Call_080_Vehicle_20.txt",
         "./data/Call_130_Vehicle_40.txt"};
 
     // Possibility to run with argument paths aswell

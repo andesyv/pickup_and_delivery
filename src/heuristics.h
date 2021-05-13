@@ -7,6 +7,7 @@ Solution genInitialSolution(const Problem& p);
 SolutionCached genInitialSolutionCached(const Problem& p);
 Solution genRandSolution(const Problem& p);
 Solution genRandSolution(const Problem& p, std::default_random_engine& engine);
+SolutionCached genRandSolutionCached(const Problem& p, std::default_random_engine& engine);
 
 // Searches
 Solution blindRandomSearch(const Problem& p, std::default_random_engine& ran);
