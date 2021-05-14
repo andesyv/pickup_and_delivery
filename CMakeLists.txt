@@ -24,7 +24,7 @@ if(PARALLEL_EXECUTION)
     add_compile_definitions(PARALLEL_EXECUTION)
 endif()
 
-option(ALL_ALGORITHMS "Run all searching algorithms per file" ON)
+option(ALL_ALGORITHMS "Run all searching algorithms per file" OFF)
 if(ALL_ALGORITHMS)
     add_compile_definitions(ALL_ALGORITHMS)
 endif()
