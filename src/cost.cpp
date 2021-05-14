@@ -157,21 +157,16 @@ Result<int, std::runtime_error> getCost(const Problem &problem, const SolutionCo
     return totalCost;
 }
 
-#ifndef NDEBUG
-static constexpr bool DEBUG = true;
-#else
-static constexpr bool DEBUG = false;
-#endif
-
 FeasibilityCostRet getFeasibleCost(const Problem& p, SolutionCached& s) {
     int totalCost{0};
     for (index_t i{0}; i < s.size(); ++i) {
         // If it was not changed but don't have a cost either, it's infeasible
         if (s[i].infeasible()) {
-            if constexpr (DEBUG)
+            #ifndef NDEBUG
                 return std::runtime_error{"Solution previously declared infeasible."};
-            else
+            #else
                 return std::nullopt;
+            #endif
         // Skip the whole thing if it hasn't been updated
         } else if (s[i].feasible()) {
             totalCost += *s[i].cost;
@@ -195,10 +190,11 @@ FeasibilityCostRet getFeasibleCost(const Problem& p, SolutionCached& s) {
             const auto& available{vehicle.availableCalls};
             for (auto it{route.begin()}; it != route.end(); ++it)
                 if (!std::any_of(available.begin(), available.end(), [&](const auto& v){ return v == *it; }))
-                    if constexpr (DEBUG)
+                    #ifndef NDEBUG
                         return std::runtime_error{std::string{"Vehicle "}.append(std::to_string(i)).append(" does not have required route ").append(std::to_string(*it))};
-                    else
+                    #else
                         return std::nullopt;
+                    #endif
 
 
             std::vector<bool> currentCalls;
@@ -221,10 +217,12 @@ FeasibilityCostRet getFeasibleCost(const Problem& p, SolutionCached& s) {
                     // Since adding new route, traverse to start of route.
                     const auto pOpt = findPath(currentNode, call.origin);
                     if (!pOpt)
-                        if constexpr (DEBUG)
-                            return std::runtime_error{"Could not find route path."};
-                        else
-                            return std::nullopt;
+                    #ifndef NDEBUG
+                        return std::runtime_error{"Could not find route path."};
+                    #else
+                        return std::nullopt;
+                    #endif
+
                     const auto path{pOpt.value()};
                     vehicleCost += path.cost;
                     capacity += call.size;
@@ -232,27 +230,29 @@ FeasibilityCostRet getFeasibleCost(const Problem& p, SolutionCached& s) {
                     
                     // If exceeding capacity, exit.
                     if (vehicle.capacity < capacity)
-                        if constexpr (DEBUG)
+                        #ifndef NDEBUG
                             return std::runtime_error{std::string{"Vehicle "}.append(std::to_string(i)).append(" exceeds capacity.")};
-                        else
+                        #else
                             return std::nullopt;
-                        
+                        #endif
 
                     // Check that we didn't miss the pickup window.
                     if (call.upperTimewindowPickup < time)
-                        if constexpr (DEBUG)
+                        #ifndef NDEBUG
                             return std::runtime_error{std::string{"Vehicle "}.append(std::to_string(i)).append(" missed their timeslot for pickup.")};
-                        else
+                        #else
                             return std::nullopt;
+                        #endif
                     
                     currentNode = path.destination;
 
                     // It costs some moneys to pick up package
                     if (!p.vehicleCalls.contains({i, callIndex}))
-                        if constexpr (DEBUG)
+                        #ifndef NDEBUG
                             return std::runtime_error{"Could not find vehicle call combo."};
-                        else
+                        #else
                             return std::nullopt;
+                        #endif
                     const auto vehicleCall = p.vehicleCalls.at({i, callIndex});
 
                     vehicleCost += vehicleCall.originNodeCosts;
@@ -267,10 +267,11 @@ FeasibilityCostRet getFeasibleCost(const Problem& p, SolutionCached& s) {
                     // Destination
                     const auto pOpt = findPath(currentNode, call.destination);
                     if (!pOpt)
-                        if constexpr (DEBUG)
+                        #ifndef NDEBUG
                             return std::runtime_error{"Could not find route path."};
-                        else
+                        #else
                             return std::nullopt;
+                        #endif
                     const auto path{pOpt.value()};
 
                     vehicleCost += path.cost;
@@ -281,10 +282,11 @@ FeasibilityCostRet getFeasibleCost(const Problem& p, SolutionCached& s) {
                     // Assume that we deliver the instant we arrive
                     // Check that we didn't miss our delivery window
                     if (call.upperTimewindowDelivery < time)
-                        if constexpr (DEBUG)
+                        #ifndef NDEBUG
                             return std::runtime_error{std::string{"Vehicle "}.append(std::to_string(i)).append(" missed their timeslot for delivery.")};
-                        else
+                        #else
                             return std::nullopt;
+                        #endif
 
                     // Wait for delivery
                     if (time < call.lowerTimewindowDelivery)
@@ -292,10 +294,11 @@ FeasibilityCostRet getFeasibleCost(const Problem& p, SolutionCached& s) {
 
 
                     if (!p.vehicleCalls.contains({i, callIndex}))
-                        if constexpr (DEBUG)
+                        #ifndef NDEBUG
                             return std::runtime_error{"Could not find vehicle call combo."};
-                        else
+                        #else
                             return std::nullopt;
+                        #endif
                     const auto vehicleCall = p.vehicleCalls.at({i, callIndex});
                     // It costs some moneys to deliver package
                     vehicleCost += vehicleCall.destNodeCosts;

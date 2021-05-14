@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.13)
 
 project(pickup_and_delivery)
 
@@ -6,6 +6,18 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if (CMAKE_BUILD_TYPE STREQUAL "RELEASE")
+    add_compile_definitions(NDEBUG)
+endif()
+
+
+add_executable(pickup_and_delivery)
+
+if (UNIX)
+    target_link_options(pickup_and_delivery PRIVATE "-pthread")
+endif()
+
 
 option(PARALLEL_EXECUTION "Run iterations in parallel, utilizing multiple threads" ON)
 if(PARALLEL_EXECUTION)
