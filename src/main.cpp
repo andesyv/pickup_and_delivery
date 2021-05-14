@@ -39,8 +39,9 @@ auto powi(auto n, auto e) {
  */
 template <long long Seconds, int R>
 auto findAvailableTime(auto n, auto i) {
-    const auto a = -Seconds / (1 - powi(2, n));
-    return a * powi(R, i);
+    const auto a = (1 - R) * Seconds / (1 - powi(R, n));
+    return a * (1 - powi(R, i+1)) / (1 - R);
+    // return a * powi(R, i);
 }
 
 int main(int argc, char *argv[])
@@ -83,10 +84,10 @@ int main(int argc, char *argv[])
 
 #ifdef RUN_FOR_10_MINUTES
     // Calculate available time for each instance. (max milliseconds for each instance, floored)
-    constexpr long long MAX_SECONDS = 10 * 60;
+    constexpr long long MAX_SECONDS = 9 * 60;
     constexpr auto MAX_TIME = std::chrono::duration_cast<TimeUnit>(std::chrono::seconds{MAX_SECONDS}).count();
     for (int i{0}; i < files.size(); ++i)
-        files[i].second = findAvailableTime<MAX_TIME, 2>(files.size(), i);
+        files[i].second = findAvailableTime<MAX_TIME, 3>(files.size(), i);
 #endif
 
     for (const auto [file, availableTime] : files)

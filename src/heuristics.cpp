@@ -506,7 +506,6 @@ SolutionCached adaptiveCachedSearch(const Problem& p, std::default_random_engine
     };
 
 #ifdef RUN_FOR_10_MINUTES
-    // 540 seconds = 9 mins. Setting this to 9 min to be on the safe side.
     auto remainingTime = p_start != nullptr ? (availableTime - std::chrono::duration_cast<TimeUnit>(std::chrono::high_resolution_clock::now() - *p_start).count()) : -1;
     long long elapsed;
     std::chrono::high_resolution_clock::time_point start;
@@ -621,6 +620,7 @@ SolutionCached adaptiveCachedSearch(const Problem& p, std::default_random_engine
         elapsed = std::chrono::duration_cast<TimeUnit>(std::chrono::high_resolution_clock::now() - start).count();
         remainingTime -= elapsed;
     } while (elapsed < remainingTime);
+
 #endif
 
     // std::cout << "Operator efficiency:" << std::endl;
