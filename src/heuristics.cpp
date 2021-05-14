@@ -431,7 +431,7 @@ Solution adaptiveSearch(const Problem& p, std::default_random_engine& ran) {
     return best;
 }
 
-SolutionCached adaptiveCachedSearch(const Problem& p, std::default_random_engine& ran, const std::chrono::high_resolution_clock::time_point* p_start) {
+SolutionCached adaptiveCachedSearch(const Problem& p, std::default_random_engine& ran, const std::chrono::high_resolution_clock::time_point* p_start, long long availableTime) {
     constexpr unsigned int MAX_SEARCH = 100000;
     constexpr unsigned int SEGMENT_SIZE = 100;
     constexpr unsigned int ESCAPE_CONDITION = 700;
@@ -505,9 +505,9 @@ SolutionCached adaptiveCachedSearch(const Problem& p, std::default_random_engine
         return cost < localBestCost /*|| rand() < temperature*/;
     };
 
-#ifdef RUN_LAST_REMAINING_TIME
+#ifdef RUN_FOR_10_MINUTES
     // 540 seconds = 9 mins. Setting this to 9 min to be on the safe side.
-    auto remainingTime = p_start != nullptr ? (540 - std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - *p_start).count()) : -1;
+    auto remainingTime = p_start != nullptr ? (availableTime - std::chrono::duration_cast<TimeUnit>(std::chrono::high_resolution_clock::now() - *p_start).count()) : -1;
     long long elapsed;
     std::chrono::high_resolution_clock::time_point start;
     do {
@@ -617,8 +617,8 @@ SolutionCached adaptiveCachedSearch(const Problem& p, std::default_random_engine
 #endif
         }
 
-#ifdef RUN_LAST_REMAINING_TIME
-        elapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count();
+#ifdef RUN_FOR_10_MINUTES
+        elapsed = std::chrono::duration_cast<TimeUnit>(std::chrono::high_resolution_clock::now() - start).count();
         remainingTime -= elapsed;
     } while (elapsed < remainingTime);
 #endif

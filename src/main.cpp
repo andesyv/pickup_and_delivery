@@ -18,9 +18,30 @@
 #include <filesystem>
 #endif
 
-#ifdef RUN_LAST_REMAINING_TIME
+#ifdef RUN_FOR_10_MINUTES
 #pragma message("Using all time available on run")
 #endif
+
+auto powi(auto n, auto e) {
+    if (e <= 0)
+        return 1;
+    return n * powi(n, e-1);
+}
+
+/**
+ * @brief Finds the available time the heuristic has available using the
+ * sum of a geometric series.
+ * @see https://en.wikipedia.org/wiki/Geometric_series#Sum
+ * @param Seconds Compile time constant of total seconds available
+ * @param R Compile time constant of geometric series ratio (r)
+ * @param n Instance count
+ * @param i Index
+ */
+template <long long Seconds, int R>
+auto findAvailableTime(auto n, auto i) {
+    const auto a = -Seconds / (1 - powi(2, n));
+    return a * powi(R, i);
+}
 
 int main(int argc, char *argv[])
 {
@@ -43,12 +64,13 @@ int main(int argc, char *argv[])
 #endif
 
     // Input files:
-    std::vector files{
-        "./data/Call_7_Vehicle_3.txt",
-        "./data/Call_18_Vehicle_5.txt",
-        "./data/Call_035_Vehicle_07.txt",
-        "./data/Call_080_Vehicle_20.txt",
-        "./data/Call_130_Vehicle_40.txt"};
+    std::vector<std::pair<const char*, long long>> files{
+        {"./data/Call_7_Vehicle_3.txt", 0},
+        {"./data/Call_18_Vehicle_5.txt", 0},
+        {"./data/Call_035_Vehicle_07.txt", 0},
+        {"./data/Call_080_Vehicle_20.txt", 0},
+        {"./data/Call_130_Vehicle_40.txt", 0}
+    };
 
     // Possibility to run with argument paths aswell
     // If that is the case, use them instead
@@ -56,18 +78,30 @@ int main(int argc, char *argv[])
     {
         files.clear();
         for (int i{1}; i < argc; ++i)
-            files.push_back(argv[i]);
+            files.emplace_back(argv[i], 0);
     }
 
-    for (const auto &file : files)
+#ifdef RUN_FOR_10_MINUTES
+    // Calculate available time for each instance. (max milliseconds for each instance, floored)
+    constexpr long long MAX_SECONDS = 10 * 60;
+    constexpr auto MAX_TIME = std::chrono::duration_cast<TimeUnit>(std::chrono::seconds{MAX_SECONDS}).count();
+    for (int i{0}; i < files.size(); ++i)
+        files[i].second = findAvailableTime<MAX_TIME, 2>(files.size(), i);
+#endif
+
+    for (const auto [file, availableTime] : files)
     {
         std::cout << std::endl << file << std::endl;
-        const bool bLastFile = file == files.back();
+        const bool bLastFile = file == files.back().first;
 
 #ifdef FILE_OUTPUT
         // If file output is enabled, write some file handle info at the top
         outf << std::filesystem::path{file}.filename().string() << std::endl;
+#ifdef PARALLEL_EXECUTION
         outf << "\"Name\",\"Average objective\",\"Best objective\",\"Improvement (%)\",\"Running time\"" << std::endl;
+#else
+        outf << "\"Name\",\"Best objective\",\"Improvement (%)\"" << std::endl;
+#endif
 #endif
 
         // Problem loading
@@ -115,9 +149,9 @@ int main(int argc, char *argv[])
 
             std::vector<std::future<int>> returnVals;
 
-            const auto loop = [&](std::promise<int> &&p, std::default_random_engine&& ran, const std::chrono::high_resolution_clock::time_point* p_start = nullptr) {
+            const auto loop = [&](std::promise<int> &&p, std::default_random_engine&& ran, const std::chrono::high_resolution_clock::time_point* p_start = nullptr, long long availableTime = -1) {
                 std::chrono::steady_clock::time_point t1{std::chrono::steady_clock::now()};
-                auto solution = search(problem, ran, p_start);
+                auto solution = search(problem, ran, p_start, availableTime);
                 auto duration = std::chrono::steady_clock::now() - t1;
 
                 // Scope so mutex lock can do it's thing.
@@ -163,20 +197,21 @@ int main(int argc, char *argv[])
                 p.set_value(0);
             };
 
+#ifdef PARALLEL_EXECUTION
+
             // Init promises (for return values for each thread)
             std::vector<std::promise<int>> promises;
             promises.resize(THREAD_COUNT);
             returnVals.reserve(THREAD_COUNT);
 
-#ifdef PARALLEL_EXECUTION
             // Init threads
             for (auto i{0}; i < THREAD_COUNT; ++i)
             {
                 auto p = std::move(promises[i]);
                 returnVals.push_back(p.get_future());
                 auto ran = std::default_random_engine{static_cast<unsigned int>(std::time(nullptr) + i * 3)};
-#ifdef RUN_LAST_REMAINING_TIME
-                threads.push_back(std::thread{loop, std::move(p), std::move(ran), bLastFile ? &program_start : nullptr});
+#ifdef RUN_FOR_10_MINUTES
+                threads.push_back(std::thread{loop, std::move(p), std::move(ran), &program_start, availableTime});
 #else
                 threads.push_back(std::thread{loop, std::move(p), std::move(ran)});
 #endif
@@ -200,15 +235,12 @@ int main(int argc, char *argv[])
             }
 
 #else
-            // If non-multithread, run loops manually
-            for (auto i{0}; i < THREAD_COUNT; ++i)
-            {
-                auto p = std::move(promises[i]);
-                auto f = p.get_future();
-                loop(std::move(p), std::default_random_engine{static_cast<unsigned int>(std::time(nullptr))});
-                if (0 != f.get())
-                    return f.get();
-            }
+            // If non-multithread, run loop manually. Once.
+            std::promise<int> p{};
+            auto f = p.get_future();
+            loop(std::move(p), std::default_random_engine{static_cast<unsigned int>(std::time(nullptr))}, &program_start, availableTime);
+            if (0 != f.get())
+                return f.get();
 #endif
 
             auto improvementPercent = [&]() {
@@ -222,8 +254,10 @@ int main(int argc, char *argv[])
             std::cout << std::endl
                       << std::endl;
 
-            std::cout << "Average cost: " << static_cast<double>(totalCost) / 10.0 << std::endl;
-            std::cout << "Average runtime: " << static_cast<double>(totalTime) / 10.0 << "ms" << std::endl;
+#ifdef PARALLEL_EXECUTION
+            std::cout << "Average cost: " << static_cast<double>(totalCost) / THREAD_COUNT << std::endl;
+            std::cout << "Average runtime: " << static_cast<double>(totalTime) / THREAD_COUNT << "ms" << std::endl;
+#endif
             std::cout << "Best cost: " << bestCost << std::endl;
             std::cout << "Best solution: ";
             for (const auto &v : fromNestedList(bestSolution))
@@ -234,9 +268,14 @@ int main(int argc, char *argv[])
 #ifdef FILE_OUTPUT
             // Write results to file:
             outf << "\"" << algname << "\",";
-            outf << totalCost / 10 << "," << bestCost << ",";
-            outf << std::fixed << std::setprecision(2) << improvementPercent() << ",";
-            outf << static_cast<double>(totalTime) / 10.0 << "ms";
+            outf << totalCost / THREAD_COUNT << ",";
+#ifdef PARALLEL_EXECUTION            
+            outf << bestCost << ",";
+#endif
+            outf << std::fixed << std::setprecision(2) << improvementPercent();
+#ifdef PARALLEL_EXECUTION
+            outf << "," << static_cast<double>(totalTime) / 10.0 << "ms";
+#endif
             outf << std::endl;
 
             // Write solutions to file

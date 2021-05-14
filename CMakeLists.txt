@@ -22,9 +22,9 @@ if(FILE_OUTPUT)
     add_compile_definitions(FILE_OUTPUT)
 endif()
 
-option(RUN_LAST_REMAINING_TIME "Run the last file for all remaining execution time" ON)
-if (RUN_LAST_REMAINING_TIME)
-    add_compile_definitions(RUN_LAST_REMAINING_TIME)
+option(RUN_FOR_10_MINUTES "Run the last file for all remaining execution time" ON)
+if (RUN_FOR_10_MINUTES)
+    add_compile_definitions(RUN_FOR_10_MINUTES)
 endif()
 
 

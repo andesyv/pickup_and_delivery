@@ -17,8 +17,10 @@ Solution simulatedAnnealing(const Problem& p, std::default_random_engine& ran);
 Solution simulatedAnnealing2ElectricBoogaloo(const Problem& p, std::default_random_engine& ran);
 Solution adaptiveSearch(const Problem& p);
 Solution adaptiveSearch(const Problem& p, std::default_random_engine& engine);
-SolutionCached adaptiveCachedSearch(const Problem& p, std::default_random_engine& engine, const std::chrono::high_resolution_clock::time_point* p_start = nullptr);
+SolutionCached adaptiveCachedSearch(const Problem& p, std::default_random_engine& engine, const std::chrono::high_resolution_clock::time_point* p_start = nullptr, long long availableTime = -1);
 
 using HeuristicParallelSignature = Solution (*)(const Problem&, std::default_random_engine&);
-using HeuristicParallelSignatureCached = SolutionCached (*)(const Problem&, std::default_random_engine&, const std::chrono::high_resolution_clock::time_point*);
+using HeuristicParallelSignatureCached = SolutionCached (*)(const Problem&, std::default_random_engine&, const std::chrono::high_resolution_clock::time_point*, long long);
 using HeuristicSimpleSignature = Solution (*)(const Problem&);
+
+using TimeUnit = std::chrono::microseconds;
