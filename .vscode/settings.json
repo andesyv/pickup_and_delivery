@@ -89,5 +89,5 @@
         "cstdarg": "cpp"
     },
     "cmake.generator": "Visual Studio 16 2019",
-    "cmake.configureSettings": { "PARALLEL_EXECUTION": "ON", "ALL_ALGORITHMS": "OFF", "FILE_OUTPUT": "ON" }
+    "cmake.configureSettings": { "PARALLEL_EXECUTION": "ON", "ALL_ALGORITHMS": "OFF", "FILE_OUTPUT": "ON", "RUN_LAST_REMAINING_TIME": "OFF" }
 }

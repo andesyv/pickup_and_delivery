@@ -18,6 +18,10 @@
 #include <filesystem>
 #endif
 
+#ifdef RUN_LAST_REMAINING_TIME
+#pragma message("Using all time available on run")
+#endif
+
 int main(int argc, char *argv[])
 {
     const auto program_start = std::chrono::high_resolution_clock::now();
@@ -40,10 +44,10 @@ int main(int argc, char *argv[])
 
     // Input files:
     std::vector files{
-        // "./data/Call_7_Vehicle_3.txt",
-        // "./data/Call_18_Vehicle_5.txt",
-        // "./data/Call_035_Vehicle_07.txt",
-        // "./data/Call_080_Vehicle_20.txt",
+        "./data/Call_7_Vehicle_3.txt",
+        "./data/Call_18_Vehicle_5.txt",
+        "./data/Call_035_Vehicle_07.txt",
+        "./data/Call_080_Vehicle_20.txt",
         "./data/Call_130_Vehicle_40.txt"};
 
     // Possibility to run with argument paths aswell
@@ -58,6 +62,7 @@ int main(int argc, char *argv[])
     for (const auto &file : files)
     {
         std::cout << std::endl << file << std::endl;
+        const bool bLastFile = file == files.back();
 
 #ifdef FILE_OUTPUT
         // If file output is enabled, write some file handle info at the top
@@ -110,9 +115,9 @@ int main(int argc, char *argv[])
 
             std::vector<std::future<int>> returnVals;
 
-            const auto loop = [&](std::promise<int> &&p, std::default_random_engine&& ran) {
+            const auto loop = [&](std::promise<int> &&p, std::default_random_engine&& ran, const std::chrono::high_resolution_clock::time_point* p_start = nullptr) {
                 std::chrono::steady_clock::time_point t1{std::chrono::steady_clock::now()};
-                auto solution = search(problem, ran);
+                auto solution = search(problem, ran, p_start);
                 auto duration = std::chrono::steady_clock::now() - t1;
 
                 // Scope so mutex lock can do it's thing.
@@ -164,14 +169,17 @@ int main(int argc, char *argv[])
             returnVals.reserve(THREAD_COUNT);
 
 #ifdef PARALLEL_EXECUTION
-
             // Init threads
             for (auto i{0}; i < THREAD_COUNT; ++i)
             {
                 auto p = std::move(promises[i]);
                 returnVals.push_back(p.get_future());
                 auto ran = std::default_random_engine{static_cast<unsigned int>(std::time(nullptr) + i * 3)};
+#ifdef RUN_LAST_REMAINING_TIME
+                threads.push_back(std::thread{loop, std::move(p), std::move(ran), bLastFile ? &program_start : nullptr});
+#else
                 threads.push_back(std::thread{loop, std::move(p), std::move(ran)});
+#endif
             }
 
             // Wait for all threads to finish

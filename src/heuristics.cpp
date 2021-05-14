@@ -13,6 +13,7 @@
 #include <numeric>
 #include "zip.hpp"
 #include <functional>
+#include <chrono>
 
 Solution genInitialSolution(const Problem& p) {
     Solution routes;
@@ -430,23 +431,28 @@ Solution adaptiveSearch(const Problem& p, std::default_random_engine& ran) {
     return best;
 }
 
-SolutionCached adaptiveCachedSearch(const Problem& p, std::default_random_engine& ran) {
-    constexpr unsigned int MAX_SEARCH = 10000;
+SolutionCached adaptiveCachedSearch(const Problem& p, std::default_random_engine& ran, const std::chrono::high_resolution_clock::time_point* p_start) {
+    constexpr unsigned int MAX_SEARCH = 100000;
     constexpr unsigned int SEGMENT_SIZE = 100;
     constexpr unsigned int ESCAPE_CONDITION = 700;
     constexpr float REPLACE_WEIGHT_RATIO = 0.6f;
+
+    // using Clock = std::chrono::high_resolution_clock;
+    // Clock::time_point t1, t2;
 
     // Available operators (heuristics)
     using OperatorSignature = std::function<SolutionCached(SolutionCached)>;
     const auto operators = std::to_array<OperatorSignature>({
         [&ran](auto s){ return op::ex2(s, ran); },
         [&p, &ran](auto s){ return op::freorder(p, s, ran); },
-        [&p, &ran](auto s){ return op::fesins(p, s, ran); },
+        // [&p, &ran](auto s){ return op::fesins(p, s, ran); },
         [&ran](auto s){ return op::ins1(s, ran); },
         [&p, &ran](auto s){ return op::priceinsert(p, s, ran); },
         [&p, &ran](auto s){ return op::validins(p, s, ran); },
         // [&ran](auto s){ return op::shuffle(s, ran); },
     });
+
+    // std::array<std::pair<unsigned int, long long>, operators.size()> operatorEfficiency;
 
     const float MIN_WEIGHT = 0.8f / operators.size();
 
@@ -499,105 +505,127 @@ SolutionCached adaptiveCachedSearch(const Problem& p, std::default_random_engine
         return cost < localBestCost /*|| rand() < temperature*/;
     };
 
-    for (unsigned int i{0}; i < MAX_SEARCH;) {
-        std::array<std::pair<unsigned int, unsigned int>, weights.size()> scores{};
-        // Just to be safe:
-        for (auto& score : scores) score = {0u, 0u};
+#ifdef RUN_LAST_REMAINING_TIME
+    // 540 seconds = 9 mins. Setting this to 9 min to be on the safe side.
+    auto remainingTime = p_start != nullptr ? (540 - std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - *p_start).count()) : -1;
+    long long elapsed;
+    std::chrono::high_resolution_clock::time_point start;
+    do {
+        start = std::chrono::high_resolution_clock::now();
+#endif
 
-        for (unsigned int j{0}; j < SEGMENT_SIZE; ++i, ++j, ++iterationsSinceNewBest, temperature *= coolingFactor) {
-            if (ESCAPE_CONDITION < iterationsSinceNewBest) {
-                // Apply escape algorithm (something to bring us out of local optima)
-                localBest = op::backinsert(p, localBest, ran);
-                // auto newSol = genRandSolutionCached(p, ran);
-                const auto cost = getFeasibleCost(p, localBest); // getFeasibleCost(p, localBest);
-// #ifndef NDEBUG
-//                 if (!cost) {
-//                     std::cout << cost.err().what() << std::endl;
-//                     throw std::logic_error{"What?"};
-//                 }
-// #endif
-                // if (cost) {
-                //     localBest = newSol;
-                //     localBestCost = cost.val_or_max();
-                //     iterationsSinceNewBest = 0;
-                // }
-                localBestCost = cost.val_or_max();
-                iterationsSinceNewBest = 0;
-            }
+        for (unsigned int i{0}; i < MAX_SEARCH;) {
+            std::array<std::pair<unsigned int, unsigned int>, weights.size()> scores{};
+            // Just to be safe:
+            for (auto& score : scores) score = {0u, 0u};
 
-            const auto r = rand();
-            const auto opIndex = selectOperatorIndex(r);
-            const auto& op = operators[opIndex];
-            auto current = op(localBest);
-            unsigned int score = 0;
-
-            const auto result = getFeasibleCost(p, current);
-            if (result) {
-                score += 1; // Get 1 score from finding a feasible solution
-                const auto cost = result.val_or_max();
-                // if (cost < localBestCost) {
-                //     score += 1;
-                //     localBestCost = cost;
-
-                //     if (cost < bestCost) {
-                //         best = current;
-                //         bestCost = cost;
-                //         score += 3;
-                //         iterationsSinceNewBest = 0;
-                //     }
-                // }
-                if (cost < bestCost) {
-                    score += 20;
-                    localBest = best = current;
-                    localBestCost = bestCost = cost;
+            for (unsigned int j{0}; j < SEGMENT_SIZE; ++i, ++j, ++iterationsSinceNewBest, temperature *= coolingFactor) {
+                if (ESCAPE_CONDITION < iterationsSinceNewBest) {
+                    // Apply escape algorithm (something to bring us out of local optima)
+                    localBest = op::backinsert(p, localBest, ran);
+                    // auto newSol = genRandSolutionCached(p, ran);
+                    const auto cost = getFeasibleCost(p, localBest); // getFeasibleCost(p, localBest);
+    // #ifndef NDEBUG
+    //                 if (!cost) {
+    //                     std::cout << cost.err().what() << std::endl;
+    //                     throw std::logic_error{"What?"};
+    //                 }
+    // #endif
+                    // if (cost) {
+                    //     localBest = newSol;
+                    //     localBestCost = cost.val_or_max();
+                    //     iterationsSinceNewBest = 0;
+                    // }
+                    localBestCost = cost.val_or_max();
                     iterationsSinceNewBest = 0;
                 }
 
-                // Acceptance criteria:
-                else if (accept(cost)) {
-                    score += 3;
-                    localBest = current;
-                    localBestCost = cost;
+                const auto r = rand();
+                const auto opIndex = selectOperatorIndex(r);
+                const auto& op = operators[opIndex];
+                // t1 = Clock::now();
+                auto current = op(localBest);
+                // t2 = Clock::now();
+                unsigned int score = 0;
+
+                const auto result = getFeasibleCost(p, current);
+                if (result) {
+                    score += 1; // Get 1 score from finding a feasible solution
+                    const auto cost = result.val_or_max();
+                    // if (cost < localBestCost) {
+                    //     score += 1;
+                    //     localBestCost = cost;
+
+                    //     if (cost < bestCost) {
+                    //         best = current;
+                    //         bestCost = cost;
+                    //         score += 3;
+                    //         iterationsSinceNewBest = 0;
+                    //     }
+                    // }
+                    if (cost < bestCost) {
+                        score += 20;
+                        localBest = best = current;
+                        localBestCost = bestCost = cost;
+                        iterationsSinceNewBest = 0;
+                    }
+
+                    // Acceptance criteria:
+                    else if (accept(cost)) {
+                        score += 3;
+                        localBest = current;
+                        localBestCost = cost;
+                    }
                 }
+                
+                // Update scores
+                scores[opIndex] += std::make_pair(score, 1u);
+                // operatorEfficiency[opIndex] += std::make_pair(score, std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count());
             }
-            
-            // Update scores
-            scores[opIndex] += std::make_pair(score, 1u);
-        }
 
-        // After each segment, adjust the weights to next segment using scores from last segment and control r
-        std::array<float, weights.size()> normalizedScores;
-        // Normalize according to count
-        for (auto j{0u}; j < weights.size(); ++j) {
-            const auto& [score, count] = scores[j];
-            normalizedScores[j] = count != 0 ? static_cast<float>(score) / count : 0.f;
-        }
-        // Normalize all scores so sum is 1
-        const auto sumWeight = std::accumulate(normalizedScores.begin(), normalizedScores.end(), 0.f);        
-        for (auto& ns : normalizedScores)
-            // If no scores were gained, use average weights instead
-            ns = (sumWeight < 0.0001f) ? 1.f / weights.size() : ns / sumWeight;
-        
-        // Linear blend between old and new weights:
-        for (auto [w, ns] : zip(weights, normalizedScores))
-            w = (1.f - REPLACE_WEIGHT_RATIO) * w + REPLACE_WEIGHT_RATIO * ns;
-
-        // Check if any weight is below minimum and if so, clamp and normalize again.
-        if (std::any_of(weights.begin(), weights.end(), [MIN_WEIGHT](const auto& w){ return w < MIN_WEIGHT || 1.f < w; })) {
-            float sum = 0.f;
-            for (auto& w : weights)
-                sum += w < MIN_WEIGHT ? MIN_WEIGHT : w;
+            // After each segment, adjust the weights to next segment using scores from last segment and control r
+            std::array<float, weights.size()> normalizedScores;
+            // Normalize according to count
+            for (auto j{0u}; j < weights.size(); ++j) {
+                const auto& [score, count] = scores[j];
+                normalizedScores[j] = count != 0 ? static_cast<float>(score) / count : 0.f;
+            }
+            // Normalize all scores so sum is 1
+            const auto sumWeight = std::accumulate(normalizedScores.begin(), normalizedScores.end(), 0.f);        
+            for (auto& ns : normalizedScores)
+                // If no scores were gained, use average weights instead
+                ns = (sumWeight < 0.0001f) ? 1.f / weights.size() : ns / sumWeight;
             
-            for (auto& w : weights)
-                w = w < MIN_WEIGHT ? MIN_WEIGHT : w / sum;
-        }
+            // Linear blend between old and new weights:
+            for (auto [w, ns] : zip(weights, normalizedScores))
+                w = (1.f - REPLACE_WEIGHT_RATIO) * w + REPLACE_WEIGHT_RATIO * ns;
+
+            // Check if any weight is below minimum and if so, clamp and normalize again.
+            if (std::any_of(weights.begin(), weights.end(), [MIN_WEIGHT](const auto& w){ return w < MIN_WEIGHT || 1.f < w; })) {
+                float sum = 0.f;
+                for (auto& w : weights)
+                    sum += w < MIN_WEIGHT ? MIN_WEIGHT : w;
+                
+                for (auto& w : weights)
+                    w = w < MIN_WEIGHT ? MIN_WEIGHT : w / sum;
+            }
 
 #ifndef NDEBUG
-        // Check for NaN:
-        if (std::any_of(weights.begin(), weights.end(), [](const auto& w){ return std::isnan(w); }))
-            throw std::runtime_error{"Weights are NaN!"};
+            // Check for NaN:
+            if (std::any_of(weights.begin(), weights.end(), [](const auto& w){ return std::isnan(w); }))
+                throw std::runtime_error{"Weights are NaN!"};
 #endif
-    }
+        }
+
+#ifdef RUN_LAST_REMAINING_TIME
+        elapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - start).count();
+        remainingTime -= elapsed;
+    } while (elapsed < remainingTime);
+#endif
+
+    // std::cout << "Operator efficiency:" << std::endl;
+    // for (int i{0}; i < operatorEfficiency.size(); ++i)
+    //     std::cout << i << ": " << static_cast<double>(operatorEfficiency[i].first) / operatorEfficiency[i].second << std::endl;
 
     return best;
 }
