@@ -246,6 +246,10 @@ FeasibilityCostRet getFeasibleCost(const Problem& p, SolutionCached& s) {
                     
                     currentNode = path.destination;
 
+                    // Wait for pickup timewinow
+                    if (time < call.lowerTimewindowPickup)
+                        time = call.lowerTimewindowPickup;
+
                     // It costs some moneys to pick up package
                     if (!p.vehicleCalls.contains({i, callIndex}))
                         #ifndef NDEBUG
@@ -257,10 +261,6 @@ FeasibilityCostRet getFeasibleCost(const Problem& p, SolutionCached& s) {
 
                     vehicleCost += vehicleCall.originNodeCosts;
                     time += vehicleCall.originNodeTime; // Take some time to pick up package
-
-                    // Wait for pickup timewinow
-                    if (time < call.lowerTimewindowDelivery)
-                        time = call.lowerTimewindowDelivery;
                 }
                 else
                 {
